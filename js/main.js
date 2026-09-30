@@ -6,7 +6,6 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
   const PHOTO_DIR = "photos/";
-  const IMG_RE = /\.(jpe?g|png|webp|gif|avif|bmp)$/i;
   const TZ = "+07:00";
   const WEEKDAYS = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -290,7 +289,7 @@
 
   function setupMusic() {
     if (!C.music) return;
-    audio.preload = "metadata"; // để phát hiện sớm nếu file nhạc không tồn tại
+    audio.preload = "none"; // không tải nhạc cho tới khi khách bấm nghe (đỡ tốn dung lượng 3G/4G)
     audio.volume = 0.6;
     const state = $(".tape-state", musicBtn);
     audio.addEventListener("error", () => (musicBtn.hidden = true));
@@ -422,58 +421,6 @@
   }
 
   /* ----------------------------------------------------------------- photos */
-  /** Đọc danh sách ảnh trực tiếp từ thư mục (khi chạy qua web server có liệt kê thư mục). */
-  async function listFromDirectory() {
-    if (location.protocol === "file:") return [];
-    try {
-      const res = await fetch(PHOTO_DIR, { cache: "no-store" });
-      if (!res.ok || !(res.headers.get("content-type") || "").includes("html")) return [];
-      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
-      const base = new URL(PHOTO_DIR, location.href);
-      const seen = new Set();
-      $$("a[href]", doc).forEach((a) => {
-        const href = a.getAttribute("href");
-        if (!IMG_RE.test(href.split(/[?#]/)[0])) return;
-        const url = new URL(href, base);
-        if (url.href.startsWith(base.href)) seen.add(url.href);
-      });
-      return [...seen];
-    } catch {
-      return [];
-    }
-  }
-
-  /** Dò ảnh theo tên file — dùng được cả khi mở thẳng index.html (trình duyệt không cho đọc danh sách thư mục).
-   *  Tên đặc biệt: cover, chu-re, co-dau, nen-1..3. Album: 1, 2, 3… (bỏ trống vài số vẫn được). */
-  const EXTS = ["jpg", "jpeg", "png", "webp", "JPG", "JPEG", "PNG", "WEBP", "avif", "gif"];
-  const tryLoad = (src) => new Promise((ok) => {
-    const im = new Image();
-    im.onload = () => ok(src);
-    im.onerror = () => ok(null);
-    im.src = src;
-  });
-  async function findFile(name) {
-    for (const ext of EXTS) {
-      const hit = await tryLoad(`${PHOTO_DIR}${encodeURIComponent(name)}.${ext}`);
-      if (hit) return hit;
-    }
-    return null;
-  }
-  async function probePhotos() {
-    const names = ["cover", "chu-re", "co-dau", "nen-1", "nen-2", "nen-3"];
-    const found = (await Promise.all(names.map(findFile))).filter(Boolean);
-    // album 1, 2, 3…: dò theo lô 8 số, dừng khi cả một lô không có ảnh nào
-    for (let start = 1, misses = 0; misses < 1 && start < 1000; start += 8) {
-      const batch = await Promise.all(Array.from({ length: 8 }, (_, k) => findFile(String(start + k))));
-      const hits = batch.filter(Boolean);
-      found.push(...hits);
-      misses = hits.length ? 0 : misses + 1;
-    }
-    return found;
-  }
-
-  const nameOf = (src) => decodeURIComponent(src.split(/[?#]/)[0].split("/").pop()).replace(/\.[^.]+$/, "");
-  const keyOf = (name) => name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/[^a-z0-9]/g, "");
 
   const makeImg = (src, { lazy = true, alt = "" } = {}) => {
     const img = new Image();
@@ -485,25 +432,21 @@
   };
 
   let photos = [];
+  /** Ảnh lấy theo danh sách cố định trong config.js (mục photos) — chỉ tải đúng các file đã khai báo. */
   async function loadPhotos() {
-    // Có web server liệt kê thư mục thì lấy toàn bộ ảnh; không thì dò theo tên (mở thẳng index.html, host tĩnh)
-    let srcs = await listFromDirectory();
-    if (!srcs.length) srcs = await probePhotos();
-    srcs.sort((a, b) => nameOf(a).localeCompare(nameOf(b), "vi", { numeric: true, sensitivity: "base" }));
-
-    const special = {};
-    photos = [];
-    srcs.forEach((src) => {
-      const k = keyOf(nameOf(src));
-      if (/^(cover|anhbia)/.test(k)) special.cover ||= src;
-      else if (/^(chure|groom)/.test(k)) special.groom ||= src;
-      else if (/^(codau|bride)/.test(k)) special.bride ||= src;
-      else if (/^(nen|bg)\d/.test(k)) (special.bg ||= {})[k.match(/^(?:nen|bg)(\d)/)[1]] ||= src;
-      else photos.push(src);
-    });
+    const P = C.photos || {};
+    const src = (name) => (name ? PHOTO_DIR + String(name).split("/").map(encodeURIComponent).join("/") : "");
+    const special = {
+      cover: src(P.cover),
+      groom: src(P.groom),
+      bride: src(P.bride),
+      bg: { 1: src(P.bg?.[0]), 2: src(P.bg?.[1]), 3: src(P.bg?.[2]) },
+    };
+    photos = (P.album || []).filter(Boolean).map(src);
 
     const cover = special.cover || photos[0];
-    if (cover) document.documentElement.style.setProperty("--wall", `url("${cover}")`);
+    // đường dẫn đầy đủ: url() trong biến CSS được tính theo vị trí file css/, không phải trang
+    if (cover) document.documentElement.style.setProperty("--wall", `url("${new URL(cover, location.href).href}")`);
     if (cover) $("#hero-photo").replaceChildren(makeImg(cover, { lazy: false }));
 
 
@@ -732,7 +675,7 @@
   /* -------------------------------------------------------------- giao diện */
   function setupTheme() {
     const root = document.documentElement;
-    if (!root.dataset.theme) root.dataset.theme = C.theme === "modern" ? "modern" : "classic";
+    if (!root.dataset.themeFromUrl) root.dataset.theme = C.theme === "modern" ? "modern" : "classic";
     const sync = () => $$("[data-theme-pick]").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.themePick === root.dataset.theme)));
     sync();
     document.addEventListener("click", (e) => {

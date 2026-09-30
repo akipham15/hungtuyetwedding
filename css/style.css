@@ -20,7 +20,7 @@
   /* màu ảnh kiểu phim những năm 90: ấm, hơi phai */
   --film: sepia(.2) saturate(.9) contrast(.94) brightness(1.04) hue-rotate(-6deg);
 
-  --f-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --f-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --f-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --ease: cubic-bezier(.2, .8, .2, 1);
@@ -795,7 +795,7 @@ html:not(.motion) .hero-card { display: none; }
  *  đường kẻ mảnh, hồng phấn trầm, nhiều khoảng trắng
  * ========================================================================= */
 [data-theme="modern"] {
-  --f-display: "Cormorant Garamond", "Playfair Display", Georgia, serif;
+  --f-display: "Cormorant Garamond", Georgia, serif;
   --paper: #fbf8f5;
   --white: #ffffff;
   --cream: #f6f1eb;
@@ -812,14 +812,14 @@ html:not(.motion) .hero-card { display: none; }
   --line: rgba(61, 52, 53, .14);
 }
 [data-theme="modern"] .grain { display: none; }
-[data-theme="modern"] body { font-weight: 300; }
+[data-theme="modern"] body { font-weight: 400; }
 
 /* tiêu đề mảnh, nhãn chữ in hoa nhỏ giãn rộng */
 [data-theme="modern"] .h2 { font-weight: 400; font-size: clamp(2.6rem, 6.4vw, 5rem); letter-spacing: -.01em; line-height: 1.02; }
 [data-theme="modern"] .h2 i { font-weight: 300; font-style: italic; color: var(--rose); }
 [data-theme="modern"] .eyebrow { padding: 0; background: none; border-radius: 0; font: 500 .68rem/1.3 var(--f-body); letter-spacing: .36em; color: var(--muted); }
 [data-theme="modern"] .eyebrow::before { display: block; width: 44px; background: var(--rose); }
-[data-theme="modern"] .lead { font-weight: 300; }
+[data-theme="modern"] .lead { font-weight: 400; }
 [data-theme="modern"] .btn { border-width: 1px; border-color: var(--ink); color: var(--ink); font: 500 .7rem/1 var(--f-body); letter-spacing: .22em; text-transform: uppercase; padding: 1.15em 1.9em; }
 [data-theme="modern"] .btn:hover { background: var(--ink); color: var(--paper); }
 [data-theme="modern"] .btn-fill { background: var(--ink); border-color: var(--ink); color: var(--paper); }
@@ -856,7 +856,7 @@ html:not(.motion) .hero-card { display: none; }
 [data-theme="modern"] .hc-kicker { color: var(--muted); letter-spacing: .36em; font-weight: 500; }
 [data-theme="modern"] .hc-names { font: 300 clamp(2.6rem, 8vw, 4.2rem)/1 var(--f-display); letter-spacing: -.01em; color: var(--ink); }
 [data-theme="modern"] .hc-names i { font-style: italic; color: var(--rose); }
-[data-theme="modern"] .hc-date { font-weight: 300; letter-spacing: .08em; }
+[data-theme="modern"] .hc-date { font-weight: 400; letter-spacing: .08em; }
 
 [data-theme="modern"] .logline-text { font: 300 clamp(1.8rem, 4.2vw, 3.2rem)/1.3 var(--f-display); letter-spacing: 0; }
 [data-theme="modern"] .logline-sign { font: italic 400 1.5rem/1.3 var(--f-display); color: var(--rose); }
@@ -867,7 +867,7 @@ html:not(.motion) .hero-card { display: none; }
 [data-theme="modern"] .role-photo { border-radius: 0; }
 [data-theme="modern"] .role-as { font: 500 .66rem/1 var(--f-body); letter-spacing: .36em; color: var(--muted); }
 [data-theme="modern"] .role-name { font: 400 clamp(2.2rem, 4.6vw, 3.4rem)/1.05 var(--f-display); letter-spacing: 0; }
-[data-theme="modern"] .role-family { font-weight: 300; }
+[data-theme="modern"] .role-family { font-weight: 400; }
 
 /* ngày cưới: số mảnh cỡ lớn, đếm ngược ngăn bằng đường kẻ */
 [data-theme="modern"] .premiere { background: var(--blush-2); color: var(--ink); }
@@ -900,7 +900,7 @@ html:not(.motion) .hero-card { display: none; }
 [data-theme="modern"] .notes { background: var(--paper); }
 [data-theme="modern"] .note-ic { background: none; border: 1px solid var(--line); color: var(--rose); }
 [data-theme="modern"] .note-title { font: 500 1.7rem/1.1 var(--f-display); letter-spacing: 0; }
-[data-theme="modern"] .note p { font-weight: 300; }
+[data-theme="modern"] .note p { font-weight: 400; }
 [data-theme="modern"] .icon-btn { border-color: var(--line); color: var(--ink); }
 
 /* album, mừng cưới, lời kết */
@@ -1251,3 +1251,8 @@ html:not(.motion) .hero-card { display: none; }
 .admin-link:hover { opacity: 1; }
 [data-theme="classic"] .admin-link { color: #fbe7c0; }
 [data-theme="modern"] .admin-link { color: #fff; }
+
+/* ---------- tối ưu điện thoại ---------- */
+@media (max-width: 860px), (hover: none) {
+  .grain { animation: none; }                 /* hạt phim đứng yên: đỡ vẽ lại toàn màn hình khi cuộn */
+}
