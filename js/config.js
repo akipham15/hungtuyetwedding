@@ -100,6 +100,19 @@ window.WEDDING = {
   music: { classic: "music/song.mp3", modern: "music/song_new.mp3" },
   musicTitle: { classic: "Cheri Cheri Lady · Modern Talking", modern: "Beautiful In White · Shane Filan" },
 
+  // Ảnh — chép ảnh vào thư mục photos/ rồi ghi ĐÚNG tên file (kể cả đuôi .jpg/.jpeg/.png) vào đây.
+  // Để "" nếu chưa có. Trang chỉ tải đúng các file ghi ở đây.
+  photos: {
+    cover: "cover.jpg",        // ảnh hiện ra sau khi cuộn qua tên ở phần mở đầu ("" = dùng ảnh album đầu tiên)
+    groom: "chu-re.jpg",       // chân dung chú rể
+    bride: "co-dau.jpeg",      // chân dung cô dâu
+    bg: ["", "", ""],          // ảnh nền: [Lời ngỏ, Ngày cưới, Lời kết] — "" = dùng hình minh hoạ vẽ sẵn
+    album: [                   // album ảnh cưới, hiện theo đúng thứ tự này
+      "anh_1.jpg",
+      "anh_2.jpeg",
+    ],
+  },
+
   // Phong cách mặc định: "classic" (Gen Y — đám cưới Việt thập niên 80–90) hoặc "modern" (Gen Z — tối giản fine-art).
   // Khách vẫn đổi được bằng nút "Gen Y | Gen Z"; có thể gửi link kèm &giaodien=geny hoặc &giaodien=genz.
   theme: "classic",

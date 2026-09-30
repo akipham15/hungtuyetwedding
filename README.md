@@ -18,38 +18,41 @@ Bấm đúp **`index.html`** để mở trên trình duyệt — không cần c�
    - Bấm mục trên menu (máy tính) hoặc thanh điều hướng dưới đáy (điện thoại) → **cuộn mượt** tới đúng phần.
    - Bấm logo **✉ H & T** ở góc trái trên cùng → **đóng thiệp** (hiệu ứng ngược) và quay về màn mở thiệp.
    - Đổi Gen Y ↔ Gen Z bất cứ lúc nào bằng nút trên thanh trên cùng; link trên thanh địa chỉ tự cập nhật theo (`&giaodien=genz`), nên đang xem bản nào thì copy link gửi đi là đúng bản đó.
-3. **Nhạc nền không tự phát** — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
+3. **Nhạc nền không tự phát** (và không tải trước) — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
 
 ## Thêm ảnh
 
-Chép ảnh vào thư mục **`photos/`** rồi **F5** là ảnh hiện lên.
-Vì trình duyệt không cho trang đọc danh sách file trong thư mục, trang **tìm ảnh theo tên file** — hãy đặt tên đúng như bảng dưới (đuôi `.jpg`, `.jpeg`, `.png`, `.webp` đều được, hoa thường đều được):
+1. Chép ảnh vào thư mục **`photos/`**.
+2. Mở **`js/config.js`**, ghi **đúng tên file** (kể cả đuôi `.jpg` / `.jpeg` / `.png`, phân biệt hoa thường) vào mục `photos`:
 
-| Tên file | Dùng làm |
-|----------|----------|
-| `cover`  | Ảnh mở đầu (hiện ra sau khi cuộn qua tên) |
-| `chu-re` | Ảnh chân dung chú rể |
-| `co-dau` | Ảnh chân dung cô dâu |
-| `nen-1`, `nen-2`, `nen-3` | Ảnh nền cho Lời ngỏ, Ngày cưới, Lời kết — xem mục "Ảnh nền" bên dưới |
-| `1`, `2`, `3`, … | **Album ảnh cưới**, hiện theo thứ tự số |
+```js
+photos: {
+  cover: "cover.jpg",        // ảnh hiện ra sau khi cuộn qua tên ở phần mở đầu
+  groom: "chu-re.jpg",       // chân dung chú rể
+  bride: "co-dau.jpeg",      // chân dung cô dâu
+  bg: ["", "", ""],          // ảnh nền: [Lời ngỏ, Ngày cưới, Lời kết] — "" = dùng hình minh hoạ vẽ sẵn
+  album: ["1.jpg", "2.jpg", "3.jpg"],   // album, hiện theo đúng thứ tự này
+},
+```
 
-- Ví dụ: `cover.jpg`, `chu-re.jpg`, `co-dau.jpeg`, `1.jpg`, `2.jpg`, `3.png`…
-- Ảnh album **phải đặt tên bằng số** (ảnh tên khác như `DSC08578.JPG` sẽ không hiện). Bỏ trống vài số vẫn được (ví dụ có `1`, `2`, `5`), nhưng đừng bỏ trống quá 8 số liên tiếp.
-- Album hiện 12 ảnh trước, bấm "Xem thêm ảnh" để hiện tiếp (đổi bằng `galleryPageSize` trong config).
-- Nếu không có ảnh `cover`, ảnh `1` sẽ được dùng làm ảnh mở đầu.
+3. F5 (hoặc đẩy lên GitHub) là ảnh hiện.
+
+- Trang **chỉ tải đúng các file ghi trong config** — không dò tên, không gọi API, không có request lỗi. Tên file đặt gì cũng được, miễn ghi khớp.
+- Để `""` nếu chưa có ảnh. Không có `cover` thì dùng ảnh album đầu tiên.
+- Album hiện 12 ảnh trước, bấm "Xem thêm ảnh" để hiện tiếp (đổi bằng `galleryPageSize`).
 - Ảnh **HEIC của iPhone** cần chuyển sang JPG trước.
-- **Nên thu nhỏ ảnh** còn khoảng 1600–2000px chiều dài (mỗi ảnh vài trăm KB) để khách mở bằng điện thoại cho nhanh.
+- **Nên thu nhỏ ảnh** còn khoảng 1600–2000px chiều dài (mỗi ảnh 200–400 KB) — đây là phần nặng nhất khi khách mở bằng điện thoại.
 
-### Ảnh nền (`nen-1`, `nen-2`, `nen-3`)
+### Ảnh nền (`photos.bg`)
 
 > **Ghi chú:** hiện chưa có ảnh nền thật, nên trang đang dùng **hình minh hoạ vẽ sẵn** (Gen Y: phông xanh, lá cọ, chữ 囍, đôi bồ câu, xe đạp; Gen Z: mảng màu hồng/be, hoa vẽ nét mảnh).
-> Khi có ảnh cưới, chỉ cần chép vào `photos/` đúng tên là ảnh tự thay chỗ hình vẽ. Thiếu file nào thì chỗ đó vẫn giữ hình vẽ.
+> Khi có ảnh cưới, chép vào `photos/` rồi ghi tên file vào `photos.bg` trong config là ảnh thay chỗ hình vẽ. Ô nào để `""` thì vẫn giữ hình vẽ.
 
-| File | Vị trí | Gợi ý ảnh |
+| Ô trong `bg` | Vị trí | Gợi ý ảnh |
 |------|--------|-----------|
-| `nen-1` | Khung vòm cạnh Lời ngỏ | Ảnh **dọc**, hai bạn đứng cạnh nhau / nhìn nhau, bố cục gọn |
-| `nen-2` | Nền mờ phần Ngày cưới | Ảnh **ngang, nhiều khoảng trống** (bầu trời, mặt hồ) |
-| `nen-3` | Nền mờ phần Lời kết | Ảnh **ngang, cảm giác khép lại**: dắt tay đi xa, bóng lưng, ảnh gia đình |
+| thứ 1 | Khung vòm cạnh Lời ngỏ | Ảnh **dọc**, hai bạn đứng cạnh nhau / nhìn nhau, bố cục gọn |
+| thứ 2 | Nền mờ phần Ngày cưới | Ảnh **ngang, nhiều khoảng trống** (bầu trời, mặt hồ) |
+| thứ 3 | Nền mờ phần Lời kết | Ảnh **ngang, cảm giác khép lại**: dắt tay đi xa, bóng lưng, ảnh gia đình |
 
 ## Sửa thông tin
 
@@ -88,3 +91,10 @@ photos/           ← chép ảnh vào đây
 music/            nhạc nền (tuỳ chọn)
 assets/           ảnh QR, v.v. (tuỳ chọn)
 ```
+
+## Tối ưu tốc độ (điện thoại)
+
+- Chỉ tải font của phong cách đang xem, bỏ các font/độ đậm không dùng.
+- Nhạc chỉ tải khi khách bấm nghe; ảnh album, chân dung tải dần khi cuộn tới.
+- Hiệu ứng hạt phim (Gen Y) đứng yên trên điện thoại cho cuộn mượt.
+- Phần còn nặng nhất là **ảnh** — nhớ thu nhỏ ảnh trước khi chép vào `photos/`.

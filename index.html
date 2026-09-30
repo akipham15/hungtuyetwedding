@@ -12,7 +12,9 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23c0647f' d='M12 21s-7.5-4.6-9.6-9.2C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.2 4.3 2.4.7-1.2 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.3C19.5 16.4 12 21 12 21z'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Baloo+2:wght@600;700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=VT323&family=Playfair+Display:ital,wght@0,400;0,500;0,700;0,800;1,400;1,500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <!-- chỉ các font/độ đậm thực sự dùng; trình duyệt chỉ tải font của phong cách đang xem -->
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Baloo+2:wght@700;800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <script>
     document.documentElement.classList.add("js");
@@ -23,7 +25,9 @@
         var q = new URLSearchParams(location.search).get("giaodien") || "";
         if (q) t = /z|hien|modern|thanh/i.test(q) ? "modern" : "classic";
       } catch (e) {}
-      if (t) document.documentElement.dataset.theme = t;
+      // gán ngay từ đầu để trình duyệt chỉ tải font của phong cách đang xem (JS sẽ chỉnh lại theo config nếu cần)
+      document.documentElement.dataset.theme = t || "classic";
+      if (t) document.documentElement.dataset.themeFromUrl = "1";
     })();
   </script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
