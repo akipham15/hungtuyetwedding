@@ -185,6 +185,7 @@
         </div>
         <div class="show-body">
           <h4 class="show-title">${esc(e.title)}</h4>
+          ${e.lunar ? `<p class="show-lunar">${esc(e.lunar)}</p>` : ""}
           <p class="show-meta"><b>${esc(e.place)}</b>${e.address ? `<br>${esc(e.address)}` : ""}</p>
           <div class="show-actions">
             ${e.map ? `<a class="btn btn-sm btn-fill" href="${esc(e.map)}" target="_blank" rel="noopener">${icon("i-pin", "ic")} Chỉ đường</a>` : ""}
@@ -267,12 +268,23 @@
   /* ---------------------------------------------------------------- lời kết */
   function renderCredits() {
     const gr = C.groom || {}, br = C.bride || {};
+    // sự kiện trùng ngày giờ chính = hôn lễ; sự kiện có chữ "tiệc" = tiệc chung vui
+    const evs = (C.events || []).map((e) => ({ e, dt: parseDT(e.date, e.time) }));
+    const ceremony = W && evs.find(({ dt }) => dt && dt.y === W.y && dt.m === W.m && dt.d === W.d)?.e;
+    const partyEv = evs.find(({ e }) => /tiệc/i.test(e.title || ""));
+    const party = partyEv?.e;
+    const partyWhen = () => {
+      const { e, dt } = partyEv;
+      const when = dt ? `${pad(dt.h)}:${pad(dt.mi)} · ${WEEKDAYS[dt.weekday]}, ${pad(dt.d)}.${pad(dt.m)}.${dt.y}` : "";
+      return `${when}${e.lunar ? `<small>${esc(e.lunar)}</small>` : ""}${e.address ? `<small>${esc(e.address)}</small>` : ""}`;
+    };
     const parents = (p) => `Ông ${esc(p.father)}<br>Bà ${esc(p.mother)}`;
     const blocks = [
       ["Nhà trai", parents(gr)],
       ["Nhà gái", parents(br)],
       ["Trân trọng báo tin lễ thành hôn của con chúng tôi", `${esc(gr.fullName || G)}<br>&amp;<br>${esc(br.fullName || B)}`],
-      W ? ["Hôn lễ được cử hành vào", `${pad(W.h)}:${pad(W.mi)} · ${WEEKDAYS[W.weekday]}, ${pad(W.d)}.${pad(W.m)}.${W.y}<small>${esc(C.lunarDate || "")}</small>`] : null,
+      W ? [`Hôn lễ được cử hành${ceremony?.place ? ` tại ${esc(ceremony.place.toLowerCase())}` : ""} vào lúc`, `${pad(W.h)}:${pad(W.mi)} · ${WEEKDAYS[W.weekday]}, ${pad(W.d)}.${pad(W.m)}.${W.y}<small>${esc(C.lunarDate || "")}</small>`] : null,
+      party ? ["Vui lòng đến dự buổi tiệc chung vui cùng gia đình chúng tôi", partyWhen()] : null,
       ["Trân trọng kính mời", esc(GUEST || "Bạn cùng gia đình"), "cr-guest"],
     ].filter(Boolean);
     $("#credits-roll").innerHTML = blocks.map(([role, names, cls]) => `

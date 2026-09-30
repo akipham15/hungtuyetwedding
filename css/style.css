@@ -1256,3 +1256,7 @@ html:not(.motion) .hero-card { display: none; }
 @media (max-width: 860px), (hover: none) {
   .grain { animation: none; }                 /* hạt phim đứng yên: đỡ vẽ lại toàn màn hình khi cuộn */
 }
+
+/* ngày âm lịch của từng sự kiện */
+.show-lunar { margin: -2px 0 8px; font-size: .88rem; font-style: italic; color: var(--muted); }
+[data-theme="modern"] .show-lunar { font-family: var(--f-display); font-size: 1rem; }

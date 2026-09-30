@@ -60,7 +60,7 @@ Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ,
 
 - **Nhạc nền**: chép file mp3 vào `music/`, rồi sửa `music: { classic: "music/song.mp3", modern: "music/song_new.mp3" }` (Gen Y / Gen Z) và tên bài hiển thị ở `musicTitle`. Nên nén nhạc ~128 kbps (3–4 MB) cho nhẹ.
 - **Mã QR mừng cưới**: chép ảnh vào `assets/` rồi điền đường dẫn vào `gift.accounts[].qr`.
-- **Lịch trình hai bên**: mỗi lễ/tiệc trong `events` có `side: "trai"` hoặc `side: "gai"` (bỏ trống = hiện ở cả hai bên).
+- **Lịch trình**: mỗi lễ/tiệc trong `events` gồm `title`, `date`, `time`, `lunar` (ngày âm lịch, tuỳ chọn), `place`, `address`, `map`. Thêm `side: "trai"` hoặc `side: "gai"` nếu chỉ dành cho một bên (bỏ trống = hiện cho khách cả hai bên). Sự kiện có chữ "Tiệc" và hôn lễ (trùng ngày `date`) cũng được nhắc lại ở phần Lời kết.
 - **Lưu ý cho khách** (trang phục, gửi xe, số liên hệ, xác nhận tham dự): sửa trong `guestInfo`.
 - **Phong cách mặc định**: `theme: "classic"` (Gen Y) trong config — link không kèm `giaodien` luôn mở ra Gen Y. Gửi link kèm `&giaodien=genz` để khách mở sẵn Gen Z.
 - **Gửi thiệp có tên khách**: thêm `?ten=Tên khách` vào cuối link, ví dụ
