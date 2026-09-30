@@ -1172,3 +1172,82 @@ html:not(.motion) .hero-card { display: none; }
 
 /* Gen Y — lời kết: chừa chỗ cho dải cỏ & xe đạp dưới chân, không đè lên chữ */
 [data-theme="classic"] .credits.has-bg { padding-bottom: clamp(170px, 22vw, 230px); }
+
+/* Gen Z — bento ngày cưới: căn giữa cho cân đối */
+[data-theme="modern"] .premiere > .bigdate { justify-content: center; }
+[data-theme="modern"] .premiere > .countdown { flex-direction: column; align-items: stretch; gap: 14px; text-align: center; }
+[data-theme="modern"] .premiere .cd-cells { display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; }
+[data-theme="modern"] .premiere .cd-cells div { padding: 4px 0; }
+[data-theme="modern"] .premiere > .pm-lunar, [data-theme="modern"] .premiere > .pm-when { text-wrap: balance; }
+
+/* ---------- tinh chỉnh chung ---------- */
+/* lưu ý cho khách: 4 thẻ một hàng trên máy tính */
+.note-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+/* số đếm ngược nhích lên nhẹ mỗi khi đổi */
+.tick { animation: tick .45s var(--ease); }
+@keyframes tick { from { opacity: .2; transform: translateY(-.25em); } }
+/* đổi phong cách: mờ dần */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .45s; }
+/* Gen Z: nút Nhà trai | Nhà gái dính trên đầu cần nền đặc */
+[data-theme="modern"] .side-tabs { background: rgba(251, 248, 245, .95); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+/* Gen Z: dòng nhỏ trên thẻ tên không rớt chữ trên điện thoại */
+@media (max-width: 480px) { [data-theme="modern"] .hc-kicker { letter-spacing: .16em; font-size: .6rem; } }
+@media (prefers-reduced-motion: reduce) { .tick { animation: none; } }
+.note-title { text-wrap: balance; }
+.note .btn { white-space: nowrap; }
+
+/* logo H & T = nút quay về màn mở thiệp */
+.tb-brand { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; border: 0; background: none; cursor: pointer; color: inherit; }
+.tb-env { width: 18px; height: 18px; opacity: .75; transition: transform .3s var(--ease), opacity .3s; }
+.tb-brand:hover .tb-env { transform: translateY(-2px) rotate(-8deg); opacity: 1; }
+.leader-guest, .leader-hint { text-wrap: balance; }
+
+/* =========================================================================
+ *  HIỆU ỨNG MỞ / ĐÓNG THIỆP
+ * ========================================================================= */
+.doors { display: none; }
+.leader-start { transition: opacity .5s ease, transform .6s var(--ease), visibility .5s; }
+/* đang mở: nội dung mờ đi; đang đóng: nội dung chỉ hiện lại sau khi hiệu ứng đóng xong */
+.leader.is-opening .leader-start { opacity: 0; transform: scale(.96); transition-delay: .35s; }
+.leader.is-closing:not(.is-opening) .leader-start { transition-delay: .15s; }
+
+/* ---------- Gen Y: tấm thiệp đỏ gấp đôi, hai cánh mở ra 3D ---------- */
+[data-theme="classic"] .leader { background: transparent !important; perspective: 2200px; }
+[data-theme="classic"] .leader::before, [data-theme="classic"] .leader::after { display: none; }
+[data-theme="classic"] .doors { display: block; position: absolute; inset: 0; transform-style: preserve-3d; }
+.door {
+  position: absolute; top: 0; bottom: 0; width: 50.1%; overflow: hidden;
+  background: radial-gradient(ellipse 80% 60% at 50% 45%, #c8202c 0%, #a3121d 70%, #8a0f18 100%);
+  background-size: 200% 100%;
+  backface-visibility: hidden;
+  transition: transform 1.2s cubic-bezier(.65, 0, .25, 1), filter 1.2s;
+}
+.door-l { left: 0; background-position: left center; transform-origin: left center; box-shadow: inset -1px 0 0 rgba(0, 0, 0, .25); }
+.door-r { right: 0; background-position: right center; transform-origin: right center; box-shadow: inset 1px 0 0 rgba(255, 210, 63, .15); }
+.door-hy { position: absolute; top: 50%; font: 700 min(92vw, 78vh)/1 "Noto Serif SC", "Songti SC", "SimSun", serif; color: rgba(255, 210, 63, .1); transform: translate(-50%, -50%); pointer-events: none; }
+.door-l .door-hy { left: 100%; }
+.door-r .door-hy { left: 0; }
+/* khung viền vàng chia đôi theo hai cánh */
+.door::after { content: ""; position: absolute; top: clamp(12px, 3vw, 28px); bottom: clamp(12px, 3vw, 28px); border: 4px double rgba(255, 210, 63, .75); pointer-events: none; }
+.door-l::after { left: clamp(12px, 3vw, 28px); right: 0; border-right: 0; border-radius: 6px 0 0 6px; }
+.door-r::after { right: clamp(12px, 3vw, 28px); left: 0; border-left: 0; border-radius: 0 6px 6px 0; }
+[data-theme="classic"] .leader.is-gone { opacity: 1; visibility: visible; pointer-events: none; transition: none; }
+[data-theme="classic"] .leader.is-gone .door-l { transform: rotateY(100deg); filter: brightness(.7); }
+[data-theme="classic"] .leader.is-gone .door-r { transform: rotateY(-100deg); filter: brightness(.7); }
+
+/* ---------- Gen Z: màn hình khoá trượt lên (mở khoá) / trượt xuống (khoá) ---------- */
+[data-theme="modern"] .leader { transition: transform 1.1s cubic-bezier(.7, 0, .2, 1), border-radius 1.1s; }
+[data-theme="modern"] .leader.is-gone { opacity: 1; visibility: visible; pointer-events: none; transform: translateY(-104%); border-radius: 0 0 40px 40px; }
+[data-theme="modern"] .leader.is-opening .leader-start { opacity: 1; transform: none; transition-delay: 0s; }
+[data-theme="modern"] .leader.is-opening .ls-note { transform: scale(1.05); background: #fff; animation: none; transition: transform .4s var(--ease); }
+[data-theme="modern"] .leader.is-opening .ls-hint { opacity: 0; transition: opacity .3s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .door, [data-theme="modern"] .leader { transition: none !important; }
+}
+
+/* nút sang trang tạo link (chỉ cô dâu chú rể thấy) */
+.admin-link { margin-top: 6px; padding: 6px 14px; border: 1px dashed currentColor; border-radius: 999px; font: 600 .74rem/1.2 var(--f-body); text-decoration: none; color: var(--muted); opacity: .85; }
+.admin-link:hover { opacity: 1; }
+[data-theme="classic"] .admin-link { color: #fbe7c0; }
+[data-theme="modern"] .admin-link { color: #fff; }

@@ -8,6 +8,18 @@ Hiệu ứng cuộn dùng thư viện GSAP (tải từ CDN, cần mạng). Nếu
 
 Bấm đúp **`index.html`** để mở trên trình duyệt — không cần cài hay chạy gì thêm (cần mạng để tải font & hiệu ứng).
 
+## Khách sẽ thấy gì
+
+1. **Màn mở thiệp** — lời mời có tên khách (nếu link có `?ten=`), nút **Mở thiệp** và nút chọn phong cách **Gen Y | Gen Z**.
+   - Gen Y: tấm thiệp đỏ chữ 囍 với cuộn băng cassette; bấm mở → **hai cánh thiệp mở ra**.
+   - Gen Z: màn hình khoá điện thoại có thông báo lời mời; chạm thông báo → **màn khoá trượt lên** như mở khoá.
+   - Màn này gọn gàng, không có dòng hướng dẫn nhạc (nút nhạc đã hiện rõ khi vào thiệp).
+2. **Trong thiệp**: mở đầu (tên + ngày) → Lời ngỏ → Cô dâu & Chú rể → Ngày cưới & đếm ngược → Lịch trình **Nhà trai / Nhà gái** → Lưu ý cho khách → Album → Mừng cưới → Lời kết.
+   - Bấm mục trên menu (máy tính) hoặc thanh điều hướng dưới đáy (điện thoại) → **cuộn mượt** tới đúng phần.
+   - Bấm logo **✉ H & T** ở góc trái trên cùng → **đóng thiệp** (hiệu ứng ngược) và quay về màn mở thiệp.
+   - Đổi Gen Y ↔ Gen Z bất cứ lúc nào bằng nút trên thanh trên cùng; link trên thanh địa chỉ tự cập nhật theo (`&giaodien=genz`), nên đang xem bản nào thì copy link gửi đi là đúng bản đó.
+3. **Nhạc nền không tự phát** — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
+
 ## Thêm ảnh
 
 Chép ảnh vào thư mục **`photos/`** rồi **F5** là ảnh hiện lên.
@@ -43,20 +55,32 @@ Vì trình duyệt không cho trang đọc danh sách file trong thư mục, tra
 
 Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ, chuyện tình, số tài khoản mừng cưới…) nằm trong **`js/config.js`**.
 
-- **Nhạc nền**: chép file vào `music/song.mp3` (hoặc sửa đường dẫn `music` trong config), tên bài hiện trên cuộn băng cassette sửa ở `musicTitle`. Nhạc **không tự phát**: khách bấm nút nhạc (cuộn băng / thanh "Nhạc nền") để nghe.
+- **Nhạc nền**: chép file mp3 vào `music/`, rồi sửa `music: { classic: "music/song.mp3", modern: "music/song_new.mp3" }` (Gen Y / Gen Z) và tên bài hiển thị ở `musicTitle`. Nên nén nhạc ~128 kbps (3–4 MB) cho nhẹ.
 - **Mã QR mừng cưới**: chép ảnh vào `assets/` rồi điền đường dẫn vào `gift.accounts[].qr`.
 - **Lịch trình hai bên**: mỗi lễ/tiệc trong `events` có `side: "trai"` hoặc `side: "gai"` (bỏ trống = hiện ở cả hai bên).
 - **Lưu ý cho khách** (trang phục, gửi xe, số liên hệ, xác nhận tham dự): sửa trong `guestInfo`.
-- **Giao diện mặc định**: `theme: "classic"` hoặc `"modern"` trong config. Khách đổi bằng nút "Gen Y | Gen Z" (trình duyệt nhớ lựa chọn); gửi link kèm `&giaodien=geny` hoặc `&giaodien=genz` để chọn sẵn. Mỗi phong cách có nhạc nền riêng (`music` trong config).
-- **Gửi thiệp có tên khách**: thêm `?to=Tên khách` vào cuối link, ví dụ
-  `https://ten-mien-cua-ban/?to=Anh%20Nam` → màn mở thiệp hiện "Trân trọng kính mời **Anh Nam**".
-  Thêm `&ben=trai` hoặc `&ben=gai` để trang mở sẵn đúng bên và đánh dấu "Bạn được mời bên này", ví dụ
-  `https://ten-mien-cua-ban/?to=Anh%20Nam&ben=gai`.
+- **Phong cách mặc định**: `theme: "classic"` (Gen Y) trong config — link không kèm `giaodien` luôn mở ra Gen Y. Gửi link kèm `&giaodien=genz` để khách mở sẵn Gen Z.
+- **Gửi thiệp có tên khách**: thêm `?ten=Tên khách` vào cuối link, ví dụ
+  `https://ten-mien-cua-ban/?ten=Anh%20Nam` → màn mở thiệp hiện "Trân trọng kính mời **Anh Nam**" (tên cũng xuất hiện ở lời kết).
+  Không có `ten` thì thiệp xưng "bạn". Thêm `&ben=trai` hoặc `&ben=gai` để mở sẵn đúng bên và đánh dấu "Bạn được mời bên này".
+- **Tạo link hàng loạt**: mở **`tao-link.html`**, dán danh sách khách (mỗi dòng một người), chọn bên / phong cách → mỗi khách có một link riêng kèm nút **Sao chép** / **Xem thử** / **Sao chép tất cả**. Khi thiệp đã đưa lên mạng, điền địa chỉ thiệp vào ô trên cùng.
+  - Vào trang này từ thiệp: nút **"✉ Tạo link mời khách"** ở cuối màn mở thiệp. Nút **chỉ hiện với cô dâu chú rể** — khi bấm đúp `index.html` trên máy, hoặc khi mở link có `?quanly=1`. Khách mở link thiệp qua mạng sẽ không thấy nút này.
+  - Trang tạo link có nút **"← Về thiệp"**. Không gửi đường dẫn `tao-link.html` cho khách.
+
+## Tham số trên link (tóm tắt)
+
+| Tham số | Tác dụng | Ví dụ |
+|---------|----------|-------|
+| `ten` | Tên khách mời (không có thì xưng "bạn") | `?ten=Anh%20Nam` |
+| `ben` | Khách bên nào: `trai` / `gai` | `&ben=gai` |
+| `giaodien` | Mở sẵn phong cách: `genz` (không ghi = Gen Y) | `&giaodien=genz` |
+| `quanly` | Hiện nút sang trang tạo link (chỉ dùng cho cô dâu chú rể) | `?quanly=1` |
 
 ## Cấu trúc
 
 ```
-index.html        trang chính
+index.html        trang chính (thiệp)
+tao-link.html     tạo link mời riêng cho từng khách
 css/style.css     giao diện
 js/config.js      ← thông tin đám cưới (sửa ở đây)
 js/main.js        xử lý
