@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tạo link mời khách</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --red: #d8262f; --navy: #1c3f94; --yellow: #ffd23f; --paper: #fbf4e6; --ink: #22305a; --muted: #56607a; --line: rgba(28, 63, 148, .2); }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 400 16px/1.6 "Be Vietnam Pro", system-ui, sans-serif; }
+    main { max-width: 820px; margin: 0 auto; padding: 40px 16px 80px; }
+    .back { display: inline-block; margin-bottom: 14px; color: var(--navy); font-weight: 600; text-decoration: none; }
+    .back:hover { text-decoration: underline; }
+    h1 { margin: 0; font: 800 clamp(2rem, 6vw, 2.8rem)/1.1 "Baloo 2", sans-serif; color: var(--red); }
+    .sub { margin: 8px 0 28px; color: var(--muted); }
+    .card { background: #fff; border: 2px solid var(--navy); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    label { display: block; margin: 0 0 6px; font-weight: 600; }
+    small { color: var(--muted); }
+    input, textarea, select { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font: inherit; color: inherit; background: #fffdf8; }
+    textarea { min-height: 150px; resize: vertical; }
+    .row { display: grid; gap: 16px; grid-template-columns: 1fr 1fr; margin-top: 16px; }
+    @media (max-width: 560px) { .row { grid-template-columns: 1fr; } }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border: 2px solid var(--navy); border-radius: 8px; background: #fff; color: var(--navy); font: 700 .9rem/1 "Be Vietnam Pro", sans-serif; cursor: pointer; white-space: nowrap; }
+    .btn:hover { background: var(--navy); color: var(--yellow); }
+    .btn-red { background: var(--red); border-color: var(--red); color: #fff; }
+    .list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+    .item { display: grid; grid-template-columns: 1fr auto; gap: 8px 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fffdf8; }
+    .item b { font-size: 1.05rem; }
+    .item code { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); word-break: break-all; }
+    .actions { display: flex; gap: 8px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .empty { color: var(--muted); font-style: italic; }
+    .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; padding: 10px 18px; border-radius: 999px; background: var(--ink); color: #fff; font-size: .9rem; transition: .3s; pointer-events: none; }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+  </style>
+</head>
+<body>
+<main>
+  <a class="back" href="index.html">← Về thiệp</a>
+  <h1>Tạo link mời khách</h1>
+  <p class="sub">Mỗi khách một link riêng: khi mở thiệp sẽ thấy "Trân trọng kính mời <b>tên khách</b>". Trang này chỉ dùng cho cô dâu chú rể, không cần gửi cho khách.</p>
+
+  <section class="card">
+    <label for="base">Địa chỉ thiệp</label>
+    <input id="base" type="url" placeholder="https://ten-mien-cua-ban/">
+    <small>Điền link thiệp sau khi đưa lên mạng (ví dụ link GitHub Pages / Netlify). Mặc định là thiệp nằm cùng thư mục với trang này.</small>
+
+    <div style="margin-top:16px">
+      <label for="names">Danh sách khách mời — mỗi dòng một người</label>
+      <textarea id="names" placeholder="Anh Nam&#10;Chị Hoa và gia đình&#10;Cô Lan"></textarea>
+    </div>
+
+    <div class="row">
+      <div>
+        <label for="ben">Khách của bên nào?</label>
+        <select id="ben">
+          <option value="">Không ghi (hiện cả hai bên)</option>
+          <option value="trai">Nhà trai</option>
+          <option value="gai">Nhà gái</option>
+        </select>
+      </div>
+      <div>
+        <label for="theme">Phong cách mở ra</label>
+        <select id="theme">
+          <option value="">Gen Y (mặc định)</option>
+          <option value="genz">Gen Z</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="top">
+      <b id="count">0 link</b>
+      <button class="btn btn-red" id="copy-all" type="button">Sao chép tất cả</button>
+    </div>
+    <ul class="list" id="list"></ul>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const KEY = "tao-link";
+  const fields = ["base", "names", "ben", "theme"];
+
+  // mặc định: thiệp index.html nằm cùng thư mục với trang này
+  const defaultBase = new URL("index.html", location.href).href;
+  $("#base").placeholder = defaultBase;
+
+  // nhớ nội dung đã nhập (chỉ trên máy này)
+  try {
+    const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+    fields.forEach((f) => { if (saved[f] != null) $("#" + f).value = saved[f]; });
+  } catch (e) {}
+
+  function linkFor(name) {
+    let url;
+    try { url = new URL($("#base").value.trim() || defaultBase); } catch (e) { url = new URL(defaultBase); }
+    url.searchParams.set("ten", name);
+    if ($("#ben").value) url.searchParams.set("ben", $("#ben").value); else url.searchParams.delete("ben");
+    if ($("#theme").value) url.searchParams.set("giaodien", $("#theme").value); else url.searchParams.delete("giaodien");
+    return url.href.replace(/\+/g, "%20");
+  }
+
+  function render() {
+    try { localStorage.setItem(KEY, JSON.stringify(Object.fromEntries(fields.map((f) => [f, $("#" + f).value])))); } catch (e) {}
+    const names = $("#names").value.split("\n").map((n) => n.trim()).filter(Boolean);
+    $("#count").textContent = `${names.length} link`;
+    const list = $("#list");
+    list.innerHTML = "";
+    if (!names.length) {
+      list.innerHTML = '<li class="empty">Nhập tên khách ở trên để tạo link.</li>';
+      return;
+    }
+    names.forEach((name) => {
+      const link = linkFor(name);
+      const li = document.createElement("li");
+      li.className = "item";
+      li.innerHTML = `<b></b><div class="actions"><a class="btn" target="_blank" rel="noopener">Xem thử</a><button class="btn" type="button">Sao chép</button></div><code></code>`;
+      li.querySelector("b").textContent = name;
+      li.querySelector("a").href = link;
+      li.querySelector("code").textContent = link;
+      li.querySelector("button").addEventListener("click", () => copy(link, `Đã sao chép link của ${name}`));
+      list.append(li);
+    });
+  }
+
+  async function copy(text, msg) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = Object.assign(document.createElement("textarea"), { value: text });
+      document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove();
+    }
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(copy.timer); copy.timer = setTimeout(() => t.classList.remove("show"), 1800);
+  }
+
+  $("#copy-all").addEventListener("click", () => {
+    const names = $("#names").value.split("\n").map((n) => n.trim()).filter(Boolean);
+    if (!names.length) return;
+    copy(names.map((n) => `${n}: ${linkFor(n)}`).join("\n"), `Đã sao chép ${names.length} link`);
+  });
+  fields.forEach((f) => $("#" + f).addEventListener("input", render));
+  render();
+})();
+</script>
+</body>
+</html>

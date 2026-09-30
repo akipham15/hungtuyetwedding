@@ -16,13 +16,12 @@
   <link rel="stylesheet" href="css/style.css">
   <script>
     document.documentElement.classList.add("js");
-    // Phong cách: ?giaodien=geny | genz, hoặc lựa chọn đã lưu của khách
+    // Phong cách: mặc định theo config (Gen Y); link có ?giaodien=genz | geny thì chọn sẵn
     (function () {
       var t = "";
       try {
         var q = new URLSearchParams(location.search).get("giaodien") || "";
         if (q) t = /z|hien|modern|thanh/i.test(q) ? "modern" : "classic";
-        else t = localStorage.getItem("wedding-theme") || "";
       } catch (e) {}
       if (t) document.documentElement.dataset.theme = t;
     })();
@@ -109,6 +108,7 @@
         <path d="M44 88C48 96 56 100 60 100 66 100 74 96 78 88"/>
       </g>
     </symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 7 8.5-7"/></g></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
   </svg>
 
@@ -117,6 +117,11 @@
 
   <!-- ============ MÀN MỞ THIỆP ============ -->
   <div class="leader" id="leader">
+    <!-- Gen Y: tấm thiệp đỏ gấp đôi, hai cánh mở ra khi bấm "Mở thiệp" -->
+    <div class="doors" aria-hidden="true">
+      <div class="door door-l"><span class="door-hy">囍</span></div>
+      <div class="door door-r"><span class="door-hy">囍</span></div>
+    </div>
     <div class="leader-start" id="leader-start">
       <div class="cassette cassette-lg" aria-hidden="true">
         <div class="cs-label">
@@ -147,7 +152,6 @@
         <span class="play-ic"><svg><use href="#i-heart"/></svg></span>
         <span>Mở thiệp</span>
       </button>
-      <p class="leader-hint"><svg class="ic"><use href="#i-music"/></svg> Có nhạc nền — bấm nút nhạc ở góc màn hình để nghe</p>
       <div class="leader-theme">
         <span>Chọn phong cách</span>
         <div class="theme-switch " role="radiogroup" aria-label="Chọn phong cách">
@@ -155,11 +159,13 @@
         <button type="button" role="radio" data-theme-pick="modern" aria-checked="false">Gen Z</button>
       </div>
       </div>
+      <!-- chỉ hiện cho cô dâu chú rể (mở file trên máy hoặc link có ?quanly=1) -->
+      <a class="admin-link" id="admin-link" href="tao-link.html" hidden>✉ Tạo link mời khách</a>
     </div>
   </div>
 
   <header class="topbar">
-    <a href="#hero" class="tb-brand" data-mono>H &amp; T</a>
+    <button type="button" class="tb-brand" id="back-to-cover" title="Về màn mở thiệp" aria-label="Về màn mở thiệp"><svg class="tb-env" aria-hidden="true"><use href="#i-mail"/></svg><span data-mono>H &amp; T</span></button>
     <nav class="tb-nav" aria-label="Điều hướng">
       <a href="#cong-chieu" data-nav>Ngày cưới</a>
       <a href="#lich-chieu" data-nav>Lịch trình</a>

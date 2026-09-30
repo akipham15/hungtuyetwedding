@@ -33,7 +33,8 @@
   const G = (get(C, "groom.name") || "").normalize("NFC");
   const B = (get(C, "bride.name") || "").normalize("NFC");
   const params = new URLSearchParams(location.search);
-  const GUEST = params.get("to") || params.get("khach") || "";
+  // Tên khách mời: ?ten=Anh%20Nam (hoặc ?to= / ?khach=). Không có thì xưng "bạn".
+  const GUEST = (params.get("ten") || params.get("to") || params.get("khach") || "").trim().slice(0, 60);
 
   /* ------------------------------------------------------------------ text */
   function bindTexts() {
@@ -55,7 +56,7 @@
       set("[data-d]", pad(W.d));
       set("[data-m]", pad(W.m));
       set("[data-y]", W.y);
-      set("[data-weekday-time]", `${WEEKDAYS[W.weekday]} · ${pad(W.h)}:${pad(W.mi)}`);
+      set("[data-weekday-time]", `${WEEKDAYS[W.weekday]}\u00a0· ${pad(W.h)}:${pad(W.mi)}`); // không để dấu "·" rơi xuống đầu dòng
     }
 
     $("#leader-guest").innerHTML = GUEST
@@ -102,7 +103,7 @@
     const rsvpHref = r.url || (contacts[0] ? `https://zalo.me/${phone(contacts[0].phone)}` : "");
     if (r.text || rsvpHref) {
       cards.push(["i-check", "Xác nhận tham dự", `<p>${esc(r.text || "")}</p>${rsvpHref
-        ? `<a class="btn btn-fill" href="${esc(rsvpHref)}" target="_blank" rel="noopener">${icon("i-check", "ic")} ${r.url ? "Xác nhận tham dự" : "Nhắn xác nhận qua Zalo"}</a>` : ""}`]);
+        ? `<a class="btn btn-fill" href="${esc(rsvpHref)}" target="_blank" rel="noopener">${icon("i-check", "ic")} ${r.url ? "Xác nhận ngay" : "Nhắn qua Zalo"}</a>` : ""}`]);
     }
     if (!cards.length) {
       $("#luu-y").hidden = true;
@@ -131,10 +132,15 @@
       }
       const d = Math.floor(diff / 86400); diff %= 86400;
       const h = Math.floor(diff / 3600); diff %= 3600;
-      cells.d.textContent = d;
-      cells.h.textContent = pad(h);
-      cells.m.textContent = pad(Math.floor(diff / 60));
-      cells.s.textContent = pad(diff % 60);
+      const next = { d: String(d), h: pad(h), m: pad(Math.floor(diff / 60)), s: pad(diff % 60) };
+      Object.entries(next).forEach(([k, v]) => {
+        const el = cells[k];
+        if (el.textContent === v) return;
+        el.textContent = v;
+        el.classList.remove("tick");
+        void el.offsetWidth; // chạy lại hiệu ứng nhích số
+        el.classList.add("tick");
+      });
     };
     timer = setInterval(tick, 1000);
     tick();
@@ -324,30 +330,73 @@
       $("[data-ls-date]").textContent = `${WEEKDAYS[W.weekday]}, ${W.d} tháng ${W.m}`;
     }
     $("[data-ls-title]").textContent = `${G} & ${B}`;
-    $("[data-ls-text]").textContent = GUEST ? `${GUEST} ơi, bạn có một lời mời cưới 💌` : "Bạn có một lời mời cưới 💌";
+    $("[data-ls-text]").textContent = GUEST ? `Gửi ${GUEST} một lời mời cưới 💌` : "Bạn có một lời mời cưới 💌";
+
+    // nút sang trang tạo link: chỉ hiện khi mở thiệp trên máy (file://) hoặc link có ?quanly=1
+    if (location.protocol === "file:" || params.has("quanly")) $("#admin-link").hidden = false;
 
     let opened = false;
+    // thời gian hiệu ứng (ms) — khớp với CSS
+    const T_PREP = reduceMotion ? 0 : 900;   // cuộn băng quay / thông báo phóng to
+    const T_MOVE = reduceMotion ? 0 : 1200;  // hai cánh thiệp mở / màn khoá trượt lên
+    let timers = [];
+    const later = (fn, ms) => timers.push(setTimeout(fn, ms));
+    const clearTimers = () => { timers.forEach(clearTimeout); timers = []; };
+
     const open = () => {
       if (opened) return;
       opened = true;
+      clearTimers();
       // mặc định không tự phát nhạc — khách tự bấm nút nhạc nếu muốn nghe
       window.scrollTo(0, 0);
-      // cuộn băng quay / thông báo mở ra một chút rồi mới vào thiệp
       $(".cassette-lg", leader)?.classList.add("is-playing");
+      leader.classList.remove("is-closing");
       leader.classList.add("is-opening");
-      setTimeout(() => {
-        leader.classList.add("is-gone");
+      later(() => {
+        leader.classList.add("is-gone"); // Gen Y: hai cánh mở; Gen Z: màn khoá trượt lên
         document.body.classList.remove("is-locked");
         if (motion) ScrollTrigger.refresh();
-        setTimeout(() => leader.remove(), 1100);
-      }, reduceMotion ? 0 : 900);
+        later(() => { leader.hidden = true; }, T_MOVE);
+      }, T_PREP);
     };
     $("#play-btn").addEventListener("click", open);
     $("[data-open-invite]").addEventListener("click", open);
+
+    // bấm logo H & T: đóng thiệp lại (hiệu ứng ngược)
+    $("#back-to-cover").addEventListener("click", () => {
+      if (!opened) return;
+      opened = false;
+      clearTimers();
+      $(".cassette-lg", leader)?.classList.remove("is-playing");
+      document.body.classList.add("is-locked");
+      // bắt đầu từ trạng thái "đang mở" rồi chạy ngược lại
+      leader.classList.add("is-opening", "is-gone");
+      leader.hidden = false;
+      void leader.offsetWidth;
+      leader.classList.add("is-closing");
+      leader.classList.remove("is-gone");
+      later(() => {
+        leader.classList.remove("is-opening");
+        // chạy lại hiệu ứng thông báo rơi xuống (Gen Z)
+        const note = $(".ls-note", leader);
+        note.style.animation = "none"; void note.offsetWidth; note.style.animation = "";
+      }, T_MOVE);
+      later(() => leader.classList.remove("is-closing"), T_MOVE + 800);
+    });
   }
 
   /* --------------------------------------------------------- progress, fab */
   function setupScroll() {
+    // bấm mục menu: cuộn mượt tới phần đó, chừa chỗ cho thanh trên cùng
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest('a[href^="#"]');
+      if (!a) return;
+      const target = document.querySelector(a.getAttribute("href"));
+      if (!target) return;
+      e.preventDefault();
+      const offset = ($(".topbar")?.offsetHeight || 0) - 1;
+      window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - offset, behavior: reduceMotion ? "auto" : "smooth" });
+    });
     const bar = $("#progress-bar"), top = $("#to-top"), tabbar = $("#tabbar");
     const links = $$("[data-nav]");
     const onScroll = () => {
@@ -689,11 +738,22 @@
     document.addEventListener("click", (e) => {
       const b = e.target.closest("[data-theme-pick]");
       if (!b || b.dataset.themePick === root.dataset.theme) return;
-      root.dataset.theme = b.dataset.themePick;
-      try { localStorage.setItem("wedding-theme", root.dataset.theme); } catch {}
-      sync();
-      document.dispatchEvent(new Event("themechange"));
-      if (motion) ScrollTrigger.refresh();
+      // cập nhật link trên thanh địa chỉ: Gen Z -> ?giaodien=genz, Gen Y (mặc định) -> bỏ tham số
+      try {
+        const url = new URL(location.href);
+        if (b.dataset.themePick === "modern") url.searchParams.set("giaodien", "genz");
+        else url.searchParams.delete("giaodien");
+        history.replaceState(null, "", url);
+      } catch {}
+      const apply = () => {
+        root.dataset.theme = b.dataset.themePick;
+        sync();
+        document.dispatchEvent(new Event("themechange"));
+        if (motion) ScrollTrigger.refresh();
+      };
+      // chuyển phong cách mượt (mờ dần) trên trình duyệt hỗ trợ
+      if (document.startViewTransition && !reduceMotion) document.startViewTransition(apply);
+      else apply();
     });
   }
 
