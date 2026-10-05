@@ -1474,8 +1474,8 @@ body {
   overflow-x: clip;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .04), 0 30px 80px -20px rgba(0, 0, 0, .35);
 }
-/* khoá cuộn khi đang ở màn mở thiệp / xem ảnh (body không còn là khung cuộn của trang) */
-html:has(> body.is-locked) { overflow: hidden; }
+/* khoá cuộn khi đang ở màn mở thiệp / xem ảnh: JS gắn class lên cả <html> (không dùng :has vì lỗi trên WebKit/iPhone) */
+html.js.is-locked { overflow: hidden; }
 
 /* các thành phần cố định bám theo cột */
 .leader, .topbar, .progress { left: var(--side) !important; right: var(--side) !important; }

@@ -16,6 +16,9 @@
   const get = (obj, path) => path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), obj);
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const icon = (id, cls = "") => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+  /** Khoá/mở cuộn trang: gắn class lên cả <html> và <body>.
+   *  Không dùng html:has(body.is-locked) vì WebKit (Safari, Chrome trên iPhone) có khi không tính lại :has() → trang kẹt không cuộn được. */
+  const setLocked = (on) => [document.documentElement, document.body].forEach((el) => el.classList.toggle("is-locked", on));
 
   /** "2026-12-20T11:00" -> các thành phần (luôn theo giờ Việt Nam, không phụ thuộc máy người xem) */
   function parseDT(str, time) {
@@ -376,7 +379,7 @@
       }
       later(() => {
         leader.classList.add("is-gone"); // Gen Y: hai cánh mở; Gen Z: màn khoá trượt lên
-        document.body.classList.remove("is-locked");
+        setLocked(false);
         syncThemeColor();
         if (!isGenZ()) firecrackers(); // Gen Y: cánh thiệp mở là pháo nổ
         if (motion) ScrollTrigger.refresh();
@@ -395,7 +398,7 @@
       opened = false;
       clearTimers();
       $(".cassette-lg", leader)?.classList.remove("is-playing");
-      document.body.classList.add("is-locked");
+      setLocked(true);
       // bắt đầu từ trạng thái "đang mở" rồi chạy ngược lại
       leader.classList.add("is-opening", "is-gone");
       leader.hidden = false;
@@ -590,13 +593,13 @@
     if (!photos.length) return;
     lastFocus = document.activeElement;
     lb.hidden = false;
-    document.body.classList.add("is-locked");
+    setLocked(true);
     showLb(i);
     $(".lb-close", lb).focus();
   }
   function closeLightbox() {
     lb.hidden = true;
-    document.body.classList.remove("is-locked");
+    setLocked(false);
     lastFocus?.focus();
   }
   function setupLightbox() {
