@@ -25,7 +25,13 @@ Bấm đúp **`index.html`** để mở trên trình duyệt — không cần c�
    - **Cào số tài khoản** (phần Mừng cưới): mỗi tài khoản là một **phong bì mừng cưới** (Gen Y: phong bì đỏ, dấu sáp 囍; Gen Z: phong bì hồng phấn, dấu sáp ♡) có lá thư rút lên một nửa; số tài khoản trên lá thư được phủ một dải cào — Gen Y là dải bạc kiểu vé số cào, Gen Z là dải hologram. Cào xong thì Gen Y nổ pháo, Gen Z bung emoji. Nút **Sao chép số tài khoản** vẫn chép được ngay (và tự mở dải cào), nên khách không bắt buộc phải cào.
    - **Photobooth** (sau Album): khách bật camera (đếm ngược 3-2-1, có đèn flash) hoặc chọn ảnh có sẵn → ảnh tự gắn **khung thiệp** (Gen Y: thiệp đỏ "Vui Tân Hôn", bồ câu, dấu ngày phim; Gen Z: sticker, chữ hologram) kèm tên khách nếu link có `?ten=`. Tải ảnh về hoặc chia sẻ thẳng (điện thoại). Đổi Gen Y/Gen Z là ảnh đổi khung ngay. Ảnh xử lý hoàn toàn trên máy khách, không tải lên đâu. Camera cần trang chạy qua `https://` (GitHub Pages là được).
 4. **Toàn màn hình trên điện thoại**: bấm "Mở thiệp" là thiệp tự vào chế độ toàn màn hình (ẩn thanh địa chỉ) trên Android. iPhone (Safari) chưa cho trang web làm việc này — khách chọn **Chia sẻ → Thêm vào MH chính** thì mở từ biểu tượng sẽ hiện toàn màn hình (nhờ `manifest.webmanifest` và các thẻ meta trong `index.html`; biểu tượng ở `assets/icon-*.png`).
-5. **Nhạc nền không tự phát** (và không tải trước) — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
+5. **Thiệp tự đổi theo ngày** (giờ Việt Nam):
+   - **Đúng ngày có lễ/tiệc**: ngay dưới phần mở đầu hiện khối **"Hôm nay"** — giờ, địa điểm, trạng thái trực tiếp (còn bao lâu / đang diễn ra / đã xong), nút **Chỉ đường** lớn và nút **Gọi** chú rể/cô dâu; mục đầu thanh dưới đáy đổi thành "Hôm nay".
+   - **Sau ngày cuối cùng**: lời mời đổi thành lời cảm ơn, album chuyển lên ngay sau phần mở đầu, lịch trình chỉ còn để lưu niệm, ẩn phần lưu ý/xác nhận tham dự.
+   - Xem trước bằng link có `?ngay=2026-11-16` (ngày cưới) hoặc `?ngay=2026-11-20` (sau cưới).
+6. **Xem được khi mạng yếu**: mở thiệp một lần (qua mạng) là trang tự lưu lại; lần sau mạng chập chờn hoặc mất sóng vẫn xem được thiệp, địa chỉ, số điện thoại (`sw.js`). Có mạng thì luôn lấy bản mới nhất. Nhạc không được lưu.
+7. **Ảnh xem trước khi gửi link** (Zalo, Messenger, Facebook): `assets/og-image.jpg` (1200×630). Thẻ meta trong `index.html` ghi link đầy đủ `https://akipham15.github.io/hungtuyetwedding/` — đổi tên miền thì sửa các dòng `og:url`, `og:image`, `twitter:image`. Zalo/Facebook lưu ảnh xem trước một thời gian; muốn làm mới trên Facebook dùng [Sharing Debugger](https://developers.facebook.com/tools/debug/).
+8. **Nhạc nền không tự phát** (và không tải trước) — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
 
 ## Thêm ảnh
 
@@ -85,6 +91,7 @@ Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ,
 | `ten` | Tên khách mời (không có thì xưng "bạn") | `?ten=Anh%20Nam` |
 | `ben` | Khách bên nào: `trai` / `gai` | `&ben=gai` |
 | `giaodien` | Mở sẵn phong cách: `genz` (không ghi = Gen Y) | `&giaodien=genz` |
+| `ngay` | Giả lập ngày để xem trước chế độ "Hôm nay" / sau cưới (chỉ để kiểm tra, không gửi cho khách) | `?ngay=2026-11-16` |
 | `quanly` | Hiện nút sang trang tạo link (chỉ dùng cho cô dâu chú rể) | `?quanly=1` |
 
 ## Cấu trúc

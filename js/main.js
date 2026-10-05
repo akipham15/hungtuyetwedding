@@ -38,6 +38,28 @@
   // Tên khách mời: ?ten=Anh%20Nam (hoặc ?to= / ?khach=). Không có thì xưng "bạn".
   const GUEST = (params.get("ten") || params.get("to") || params.get("khach") || "").trim().slice(0, 60);
 
+  /* Giai đoạn của thiệp theo ngày (giờ Việt Nam): "before" trước ngày cưới, "today" đúng ngày có lễ/tiệc,
+   * "after" sau ngày cuối cùng. Cô dâu chú rể xem trước được bằng link có ?ngay=2026-11-16 */
+  const ymd = (d) => `${d.y}-${pad(d.m)}-${pad(d.d)}`;
+  const SIM_DAY = /^\d{4}-\d{2}-\d{2}$/.test(params.get("ngay") || "") ? params.get("ngay") : "";
+  /** thời điểm hiện tại; khi giả lập ngày thì lấy giờ hiện tại đặt vào ngày đó */
+  const nowVN = () => {
+    if (!SIM_DAY) return Date.now();
+    const t = new Date(Date.now() + 7 * 3600 * 1000);
+    return Date.parse(`${SIM_DAY}T${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}:00${TZ}`);
+  };
+  const TODAY = SIM_DAY || (() => {
+    const t = new Date(Date.now() + 7 * 3600 * 1000);
+    return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
+  })();
+  const ALL_EVENTS = (C.events || []).map((e) => ({ e, dt: parseDT(e.date, e.time) })).filter((x) => x.dt);
+  const PHASE = (() => {
+    const days = [W, ...ALL_EVENTS.map((x) => x.dt)].filter(Boolean).map(ymd).sort();
+    if (!days.length) return "before";
+    if (days.includes(TODAY)) return "today";
+    return TODAY > days[days.length - 1] ? "after" : "before";
+  })();
+
   /* ------------------------------------------------------------------ text */
   function bindTexts() {
     $$("[data-bind]").forEach((el) => {
@@ -294,13 +316,71 @@
       ["Trân trọng báo tin lễ thành hôn của con chúng tôi", `${esc(gr.fullName || G)}<br>&amp;<br>${esc(br.fullName || B)}`],
       W ? [`Hôn lễ được cử hành${ceremony?.place ? ` tại ${esc(ceremony.place.toLowerCase())}` : ""} vào lúc`, `${pad(W.h)}:${pad(W.mi)} · ${WEEKDAYS[W.weekday]}, ${pad(W.d)}.${pad(W.m)}.${W.y}<small>${esc(C.lunarDate || "")}</small>`] : null,
       party ? ["Vui lòng đến dự buổi tiệc chung vui cùng gia đình chúng tôi", partyWhen()] : null,
-      ["Trân trọng kính mời", esc(GUEST || "Bạn cùng gia đình"), "cr-guest"],
+      [PHASE === "after" ? "Cảm ơn sự hiện diện của" : "Trân trọng kính mời", esc(GUEST || "Bạn cùng gia đình"), "cr-guest"],
     ].filter(Boolean);
     $("#credits-roll").innerHTML = blocks.map(([role, names, cls]) => `
       <div class="cr-block ${cls || ""}" data-reveal>
         <p class="cr-role">${role}</p>
         <p class="cr-names">${names}</p>
       </div>`).join("");
+  }
+
+  /* ------------------------------------------ ngày cưới & sau ngày cưới */
+  /** Đúng ngày có lễ/tiệc: giờ, địa điểm, trạng thái trực tiếp, chỉ đường và gọi điện ngay dưới phần mở đầu */
+  function renderToday() {
+    const box = $("#hom-nay");
+    const list = ALL_EVENTS.filter(({ dt }) => ymd(dt) === TODAY).sort((a, b) => a.dt.instant - b.dt.instant);
+    const wedding = W && ymd(W) === TODAY;
+    const phone = (p) => String(p || "").replace(/[^\d+]/g, "");
+    const contacts = (get(C, "guestInfo.contacts") || []).filter((c) => c.phone);
+    box.innerHTML = `
+      <p class="eyebrow">Hôm nay</p>
+      <h2 class="today-title">${wedding ? "Hôm nay chúng mình cưới! 🎉" : `Hôm nay là ${esc(list[0]?.e.title || "ngày vui")} 🎉`}</h2>
+      <ol class="today-list">${list.map(({ e, dt }) => `
+        <li class="today-ev" data-start="${dt.instant.getTime()}">
+          <div class="td-when"><b>${pad(dt.h)}:${pad(dt.mi)}</b><span class="td-status"></span></div>
+          <div class="td-body">
+            <h3>${esc(e.title)}</h3>
+            <p><b>${esc(e.place)}</b>${e.address ? `<br>${esc(e.address)}` : ""}</p>
+            ${e.map ? `<a class="btn btn-fill today-go" href="${esc(e.map)}" target="_blank" rel="noopener">${icon("i-pin", "ic")} Chỉ đường</a>` : ""}
+          </div>
+        </li>`).join("")}</ol>
+      ${contacts.length ? `<div class="today-call">${contacts.map((c) => `<a class="btn" href="tel:${esc(phone(c.phone))}">${icon("i-phone", "ic")} Gọi ${esc(String(c.role || c.name).toLowerCase())}</a>`).join("")}</div>` : ""}`;
+    box.hidden = false;
+    // trạng thái: còn bao lâu / đang diễn ra (3 tiếng đầu) / đã xong
+    const tick = () => $$(".today-ev", box).forEach((li) => {
+      const mins = Math.round((+li.dataset.start - nowVN()) / 60000);
+      $(".td-status", li).textContent = mins > 60 ? `còn ${Math.floor(mins / 60)} giờ ${mins % 60} phút` : mins > 0 ? `còn ${mins} phút` : mins > -180 ? "đang diễn ra" : "đã xong";
+      li.classList.toggle("is-live", mins <= 0 && mins > -180);
+      li.classList.toggle("is-done", mins <= -180);
+    });
+    tick();
+    setInterval(tick, 30000);
+  }
+
+  function applyPhase() {
+    document.documentElement.dataset.phase = PHASE;
+    const html = (sel, v) => $$(sel).forEach((el) => (el.innerHTML = v));
+    if (PHASE === "today") {
+      renderToday();
+      if (W && ymd(W) === TODAY) html(".hc-kicker", "Hôm nay chúng mình cưới!");
+      // thanh điều hướng dưới đáy: mục đầu tiên dẫn tới "Hôm nay"
+      const first = $(".tabbar a");
+      if (first) { first.setAttribute("href", "#hom-nay"); $("span", first).textContent = "Hôm nay"; }
+    }
+    if (PHASE === "after") {
+      $("#leader-guest").innerHTML = `Cảm ơn ${GUEST ? esc(GUEST) : "bạn"} đã đến chung vui cùng<b>${esc(G)} &amp; ${esc(B)}</b>`;
+      html(".hc-kicker", "Cảm ơn bạn đã đến chung vui");
+      html(".te-sub", "Cảm ơn vì đã là một phần ngày vui của chúng mình!");
+      if (W) html(".te-date", `Ngày chúng mình về chung một nhà · ${pad(W.d)}.${pad(W.m)}.${W.y}`);
+      html("#lich-chieu .lead", "Cảm ơn sự hiện diện của bạn trong ngày vui của gia đình chúng tôi.");
+      // album lên ngay sau phần mở đầu; lịch trình đã diễn ra; lưu ý & xác nhận tham dự không còn cần
+      $("#hero").after($("#album"));
+      $("#lich-chieu").classList.add("is-past");
+      $$('#lich-chieu a[href*="calendar.google"]').forEach((a) => a.remove());
+      $("#luu-y").hidden = true;
+      $$('[href="#luu-y"]').forEach((a) => (a.hidden = true));
+    }
   }
 
   /* ------------------------------------------------------------------ music */
@@ -321,6 +401,54 @@
     // đổi phong cách -> đổi bài (nếu đang phát thì phát tiếp bài mới)
     document.addEventListener("themechange", applyTrack);
     applyTrack();
+  }
+  /** Đèn nháy (Gen Y) và vạch sóng nhạc (Gen Z) nháy theo nhịp bài hát thật khi đang phát.
+   *  Bỏ qua khi mở file trên máy (trình duyệt không cho đọc âm thanh → nhạc câm) và trên iPhone/iPad
+   *  (WebKit có thể giữ bộ xử lý âm thanh ở trạng thái tạm dừng → nhạc câm). Khi đó giữ hiệu ứng nháy cũ. */
+  function setupBeat() {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (reduceMotion || !AC || ios || !/^https?:$/.test(location.protocol)) return;
+    let ctx = null, analyser, data, raf = 0;
+    const level = [0, 0, 0, 0], avg = [0, 0, 0, 0], peak = [0.05, 0.05, 0.05, 0.05];
+    const BANDS = [[1, 4], [4, 12], [12, 40], [40, 110]]; // trầm → cao (fftSize 512)
+    const loop = () => {
+      analyser.getByteFrequencyData(data);
+      BANDS.forEach(([a, b], k) => {
+        let sum = 0;
+        for (let i = a; i < b; i++) sum += data[i];
+        const raw = sum / ((b - a) * 255);
+        // tự cân theo bài: so với mức trung bình gần đây của chính dải đó → chỉ nhịp nhấn mới làm đèn bừng lên
+        avg[k] = avg[k] * 0.97 + raw * 0.03;
+        peak[k] = Math.max(raw, peak[k] * 0.996, avg[k] + 0.04);
+        const v = Math.min(1, Math.max(0, (raw - avg[k] * 0.85) / (peak[k] - avg[k] * 0.85)));
+        level[k] = level[k] * 0.55 + v * 0.45; // làm mượt, không giật
+      });
+      $$(".lights, .np-eq").forEach((el) => level.forEach((v, k) => el.style.setProperty(`--b${k}`, v.toFixed(3))));
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; document.documentElement.classList.remove("is-beat"); };
+    // tạo bộ phân tích ngay trong lúc khách bấm nút nhạc (trình duyệt chỉ cho bật âm thanh khi có thao tác)
+    musicBtn.addEventListener("click", () => {
+      if (ctx) return ctx.resume?.();
+      try {
+        ctx = new AC();
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.55;
+        ctx.createMediaElementSource(audio).connect(analyser);
+        analyser.connect(ctx.destination);
+        data = new Uint8Array(analyser.frequencyBinCount);
+      } catch { ctx = null; }
+    });
+    audio.addEventListener("play", () => {
+      if (!ctx) return;
+      ctx.resume?.();
+      document.documentElement.classList.add("is-beat");
+      if (!raf) loop();
+    });
+    audio.addEventListener("pause", stop);
+    document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!audio.paused && ctx) loop(); });
   }
   function applyTrack() {
     const src = byTheme(C.music);
@@ -350,7 +478,9 @@
       $("[data-ls-date]").textContent = `${WEEKDAYS[W.weekday]}, ${W.d} tháng ${W.m}`;
     }
     $("[data-ls-title]").textContent = `${G} & ${B}`;
-    $("[data-ls-text]").textContent = GUEST ? `Gửi ${GUEST} một lời mời cưới 💌` : "Bạn có một lời mời cưới 💌";
+    $("[data-ls-text]").textContent = PHASE === "after"
+      ? `Cảm ơn ${GUEST || "bạn"} đã đến chung vui 💕`
+      : GUEST ? `Gửi ${GUEST} một lời mời cưới 💌` : "Bạn có một lời mời cưới 💌";
 
     // nút sang trang tạo link: chỉ hiện khi mở thiệp trên máy (file://) hoặc link có ?quanly=1
     if (location.protocol === "file:" || params.has("quanly")) $("#admin-link").hidden = false;
@@ -1304,6 +1434,22 @@
     });
   }
 
+  /* ------------------------------------------------- xem được khi mạng yếu */
+  /** Đăng ký service worker (chỉ khi thiệp chạy trên mạng, không phải mở file trên máy) rồi nhờ nó
+   *  lưu ngay những gì trang vừa tải — lần mở sau, đến nơi mất sóng vẫn xem được địa chỉ, số điện thoại. */
+  function setupOffline() {
+    if (!("serviceWorker" in navigator) || !/^https?:$/.test(location.protocol)) return;
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js")
+        .then(() => navigator.serviceWorker.ready)
+        .then((reg) => {
+          const urls = performance.getEntriesByType("resource").map((r) => r.name);
+          reg.active?.postMessage({ type: "cache", urls: [location.href.split("#")[0], ...urls] });
+        })
+        .catch(() => {});
+    });
+  }
+
   /* ------------------------------------------------------------------- init */
   async function init() {
     setupTheme();
@@ -1315,12 +1461,15 @@
     renderShows();
     renderGift();
     renderCredits();
+    applyPhase();
     cutout();
     setupMusic();
+    setupBeat();
     setupScroll();
     setupLightbox();
     runLeader();
     setupFx();
+    setupOffline();
     setupScratch();
     setupBooth();
     await loadPhotos();
