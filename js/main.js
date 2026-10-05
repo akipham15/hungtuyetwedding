@@ -228,12 +228,17 @@
     const group = (n) => String(n).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ");
     $("#gifts").innerHTML = list.map((a) => `
       <article class="gift-item" data-reveal>
-        <div class="bank-card">
-          <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span><span class="bc-label">${esc(a.label)}</span></div>
-          <div class="bc-chip"></div>
-          <div class="bc-number">${esc(group(a.number))}</div>
-          <div class="bc-bottom"><span><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></span>${icon("i-heart")}</div>
+        <div class="envelope">
+          <div class="env-back"></div>
+          <div class="env-letter">
+            <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span>${icon("i-heart")}</div>
+            <div class="bc-scratch"><div class="bc-number">${esc(group(a.number))}</div><canvas class="sc-cover" aria-hidden="true"></canvas></div>
+            <div class="bc-bottom"><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></div>
+          </div>
+          <div class="env-front"><span class="env-label">${esc(a.label)}</span></div>
+          <span class="env-seal" aria-hidden="true"><span class="only-y">囍</span><span class="only-z">♡</span></span>
         </div>
+        <p class="sc-hint"><span class="only-y">Cào dải bạc để xem số tài khoản 🪙</span><span class="only-z">cào nhẹ để lộ số tài khoản ✨</span></p>
         ${a.qr ? `<div class="gift-qr"><img src="${esc(a.qr)}" alt="Mã QR ${esc(a.bank)}" loading="lazy" onerror="this.parentNode.remove()"></div>` : ""}
         <button class="btn" type="button" data-copy="${esc(String(a.number).replace(/\s+/g, ""))}">${icon("i-copy", "ic")} Sao chép số tài khoản</button>
       </article>`).join("");
@@ -242,6 +247,7 @@
       const btn = e.target.closest("[data-copy]");
       if (!btn) return;
       const text = btn.dataset.copy;
+      btn.closest(".gift-item")?._reveal?.(true);
       try {
         await navigator.clipboard.writeText(text);
       } catch {
@@ -631,7 +637,7 @@
       .fromTo("#hero-mask", { scale: 1 }, { scale: 7, duration: 1, ease: "power2.in" }, 0)
       .to("#hero-mask", { opacity: 0, duration: 0.4, ease: "none" }, 0.5)
       .fromTo("#hero-photo", { scale: 1.3 }, { scale: 1, duration: 1.3, ease: "none" }, 0)
-      .fromTo(".hero-bike", { x: 0 }, { x: () => window.innerWidth * 0.75, duration: 0.7, ease: "none" }, 0)
+      .fromTo(".hero-bike", { x: 0 }, { x: () => $("#hero").clientWidth * 0.75, duration: 0.7, ease: "none" }, 0)
       .fromTo("#hero-card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.35 }, 1.0)
       .from("#hero-card > *", { opacity: 0, y: 14, stagger: 0.08, duration: 0.25 }, 1.1)
       .to({}, { duration: 0.3 });
@@ -832,19 +838,6 @@
       io.observe(logline);
     }
 
-    // thẻ mừng cưới (Gen Z): nghiêng theo con trỏ, ánh hologram chạy theo
-    $$(".bank-card").forEach((card) => {
-      card.addEventListener("pointermove", (e) => {
-        if (e.pointerType !== "mouse") return;
-        const r = card.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
-        card.style.setProperty("--tx", `${((px - 0.5) * 16).toFixed(1)}deg`);
-        card.style.setProperty("--ty", `${((0.5 - py) * 12).toFixed(1)}deg`);
-        card.style.setProperty("--mx", `${(px * 100).toFixed(0)}%`);
-      });
-      card.addEventListener("pointerleave", () => ["--tx", "--ty", "--mx"].forEach((p) => card.style.removeProperty(p)));
-    });
-
     // chạm 2 lần để thả tim (Gen Z)
     let last = 0, lx = 0, ly = 0;
     document.addEventListener("pointerup", (e) => {
@@ -890,24 +883,16 @@
   }
 
   /* ------------------------------------------------------------- thẻ cào */
-  /** Cào lớp phủ để lộ quà. Gen Y: vé số cào thập niên 90; Gen Z: thẻ cào hologram */
-  function setupScratch() {
-    const box = $("#scratch"), cv = $("#sc-cover"), ctx = cv.getContext("2d");
-    const date = W ? `${pad(W.d)}.${pad(W.m)}.${W.y}` : "";
-    const time = W ? `${pad(W.h)}:${pad(W.mi)}` : "";
-    $("#sc-prize").innerHTML = `
-      <div class="only-y"><small>🎉 Trúng giải đặc biệt 🎉</small><b>Một suất ăn cỗ cưới</b><span>Lĩnh thưởng: ${esc([time, date].filter(Boolean).join(" · "))}</span></div>
-      <div class="only-z"><small>it's a date 💍</small><b>${esc(date)}</b><span>Bạn có hẹn với ${esc(G)} &amp; ${esc(B)}</span></div>`;
-
+  /** Biến một canvas thành lớp phủ cào được. Cào khoảng một nửa (hoặc gọi hàm trả về) là mở.
+   *  Gen Y: lớp bạc như vé số cào; Gen Z: lớp hologram. */
+  function scratchable(cv, { label, onReveal }) {
+    const ctx = cv.getContext("2d"), box = cv.parentElement;
     let revealed = false, drawn = 0, last = null, moves = 0;
-    const reveal = () => {
+    const reveal = (silent = false) => {
       if (revealed) return;
       revealed = true;
       box.classList.add("is-revealed");
-      navigator.vibrate?.([30, 40, 70]);
-      const r = cv.getBoundingClientRect();
-      if (isGenZ()) emojiBurst(r.left + r.width / 2, r.top + r.height / 2, ["💍", "💖", "✨", "🥂", "🎉"], 16, { spread: 1.8, dist: 200 });
-      else firecrackers(110);
+      onReveal?.(cv, silent);
     };
 
     const paint = async () => {
@@ -920,30 +905,27 @@
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.globalCompositeOperation = "source-over";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const text = label(isGenZ());
+      const fit = (weight, family, max) => { let size = max; do { ctx.font = `${weight} ${size}px ${family}`; } while (ctx.measureText(text).width > w * 0.84 && --size > 9); };
       if (isGenZ()) {
         const g = ctx.createLinearGradient(0, 0, w, h);
-        ["#f6b3c4", "#dcc6f5", "#bfe0f7", "#f8dcc0", "#f6b3c4"].forEach((c, i, a) => g.addColorStop(i / (a.length - 1), c));
+        ["#f6b3c4", "#dcc6f5", "#bfe0f7", "#f8dcc0", "#f6b3c4"].forEach((c, i, arr) => g.addColorStop(i / (arr.length - 1), c));
         ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-        ctx.fillStyle = "rgba(255,255,255,.75)";
-        for (let i = 0; i < 26; i++) {
-          ctx.font = `${10 + ((i * 7) % 14)}px sans-serif`;
-          ctx.fillText("✦", ((i * 97) % 100) / 100 * w, ((i * 61) % 100) / 100 * h);
-        }
-        ctx.fillStyle = "#fff"; ctx.font = `700 ${Math.round(h * 0.17)}px 'Be Vietnam Pro', sans-serif`;
-        ctx.shadowColor = "rgba(140,85,99,.35)"; ctx.shadowBlur = 12;
-        ctx.fillText("cào đi nè ✨", w / 2, h / 2);
+        ctx.fillStyle = "rgba(255,255,255,.8)";
+        for (let i = 0; i < 14; i++) { ctx.font = `${8 + ((i * 7) % 8)}px sans-serif`; ctx.fillText("✦", ((i * 97) % 100) / 100 * w, ((i * 61) % 100) / 100 * h); }
+        fit(700, "'Be Vietnam Pro', sans-serif", Math.round(h * 0.4));
+        ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(140,85,99,.45)"; ctx.shadowBlur = 8;
+        ctx.fillText(text, w / 2, h / 2 + 1);
         ctx.shadowBlur = 0;
       } else {
-        // lớp bạc: vân sọc chéo + chữ "CÀO TẠI ĐÂY"
         const g = ctx.createLinearGradient(0, 0, w, h);
         g.addColorStop(0, "#b9b9b9"); g.addColorStop(0.45, "#efefef"); g.addColorStop(0.55, "#d6d6d6"); g.addColorStop(1, "#a4a4a4");
         ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
         ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
-        for (let x = -h; x < w; x += 9) { ctx.beginPath(); ctx.moveTo(x, h); ctx.lineTo(x + h, 0); ctx.stroke(); }
-        ctx.fillStyle = "#6f6f6f"; ctx.font = `800 ${Math.round(h * 0.2)}px 'Baloo 2', sans-serif`;
-        ctx.fillText("CÀO TẠI ĐÂY", w / 2, h / 2 + 2);
-        ctx.font = `${Math.round(h * 0.14)}px sans-serif`;
-        ctx.fillText("🪙", w * 0.12, h * 0.5); ctx.fillText("🪙", w * 0.88, h * 0.5);
+        for (let x = -h; x < w; x += 8) { ctx.beginPath(); ctx.moveTo(x, h); ctx.lineTo(x + h, 0); ctx.stroke(); }
+        fit(800, "'Baloo 2', sans-serif", Math.round(h * 0.42));
+        ctx.fillStyle = "#6a6a6a";
+        ctx.fillText(text, w / 2, h / 2 + 2);
       }
     };
 
@@ -951,33 +933,53 @@
     const cleared = () => {
       const { data } = ctx.getImageData(0, 0, cv.width, cv.height);
       let n = 0, t = 0;
-      for (let i = 3; i < data.length; i += 4 * 24) { t++; if (data[i] < 40) n++; }
+      for (let i = 3; i < data.length; i += 4 * 16) { t++; if (data[i] < 40) n++; }
       return t ? n / t : 0;
     };
     const scratchTo = (e) => {
       const r = cv.getBoundingClientRect();
       const p = { x: e.clientX - r.left, y: e.clientY - r.top };
       ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "#000"; // nét xoá phải đặc (lớp bạc vẽ sọc bằng nét trắng mờ)
       ctx.lineCap = ctx.lineJoin = "round";
-      ctx.lineWidth = Math.max(28, r.height * 0.22);
+      ctx.lineWidth = Math.max(26, r.height * 0.6);
       ctx.beginPath();
       ctx.moveTo((last || p).x, (last || p).y);
       ctx.lineTo(p.x + 0.1, p.y);
       ctx.stroke();
       last = p;
-      if (++moves % 8 === 0 && cleared() > 0.5) reveal();
+      if (++moves % 6 === 0 && cleared() > 0.45) reveal();
     };
     cv.addEventListener("pointerdown", (e) => { if (revealed) return; try { cv.setPointerCapture(e.pointerId); } catch {} last = null; scratchTo(e); });
     cv.addEventListener("pointermove", (e) => { if (last && !revealed) scratchTo(e); });
     ["pointerup", "pointercancel"].forEach((t) => cv.addEventListener(t, () => {
       last = null;
-      if (!revealed && cleared() > 0.5) reveal();
+      if (!revealed && cleared() > 0.45) reveal();
     }));
-    $("#sc-skip").addEventListener("click", reveal);
 
     document.addEventListener("themechange", paint);
     window.addEventListener("resize", () => { if (cv.clientWidth !== drawn) paint(); });
     paint();
+    return reveal;
+  }
+
+  /** Mừng cưới: cào dải phủ để lộ số tài khoản (nút "Sao chép" vẫn chép được ngay, không cần cào) */
+  function setupScratch() {
+    $$(".gift-item").forEach((item) => {
+      const cv = $(".sc-cover", item);
+      if (!cv) return;
+      item._reveal = scratchable(cv, {
+        label: (z) => (z ? "cào để lộ số ✨" : "CÀO ĐỂ XEM SỐ TÀI KHOẢN"),
+        onReveal: (c, silent) => {
+          item.classList.add("is-revealed");
+          if (silent) return;
+          navigator.vibrate?.([30, 40, 70]);
+          const r = c.getBoundingClientRect();
+          if (isGenZ()) emojiBurst(r.left + r.width / 2, r.top + r.height / 2, ["💸", "💖", "✨", "🥂", "💍"], 14, { spread: 1.8, dist: 180 });
+          else firecrackers(100);
+        },
+      });
+    });
   }
 
   /* ------------------------------------------------------------ photobooth */

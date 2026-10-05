@@ -22,7 +22,7 @@ Bấm đúp **`index.html`** để mở trên trình duyệt — không cần c�
    - Gen Y: **xác pháo đỏ** bay khắp màn hình khi hai cánh thiệp mở và khi cuộn tới lời kết; **dây đèn nháy** nhiều màu như rạp cưới ở phần mở đầu và lời kết; đếm ngược **lật số như đồng hồ lật**.
    - Gen Z: emoji bung ra khi mở khoá; **chạm 2 lần vào màn hình để thả tim** (như Instagram); hai **dải chữ chạy** bắt chéo; lời ngỏ hiện như **tin nhắn** ("đang nhập…" rồi bong bóng chat); chữ nhấn đổi màu hologram; **thẻ mừng cưới hologram** (máy tính: nghiêng theo chuột); mưa emoji ở lời kết; máy tính có vệt lấp lánh theo con trỏ.
    - Máy bật "giảm chuyển động" thì các hiệu ứng này tự tắt.
-   - **Thẻ cào** (phần Ngày cưới): Gen Y là **vé số cào** "Xổ số kiến thiết Hạnh Phúc" — cào lớp bạc thì trúng "Một suất ăn cỗ cưới" kèm pháo nổ; Gen Z là thẻ cào hologram lộ ra ngày cưới. Có nút "Bấm để mở" cho ai không cào được.
+   - **Cào số tài khoản** (phần Mừng cưới): mỗi tài khoản là một **phong bì mừng cưới** (Gen Y: phong bì đỏ, dấu sáp 囍; Gen Z: phong bì hồng phấn, dấu sáp ♡) có lá thư rút lên một nửa; số tài khoản trên lá thư được phủ một dải cào — Gen Y là dải bạc kiểu vé số cào, Gen Z là dải hologram. Cào xong thì Gen Y nổ pháo, Gen Z bung emoji. Nút **Sao chép số tài khoản** vẫn chép được ngay (và tự mở dải cào), nên khách không bắt buộc phải cào.
    - **Photobooth** (sau Album): khách bật camera (đếm ngược 3-2-1, có đèn flash) hoặc chọn ảnh có sẵn → ảnh tự gắn **khung thiệp** (Gen Y: thiệp đỏ "Vui Tân Hôn", bồ câu, dấu ngày phim; Gen Z: sticker, chữ hologram) kèm tên khách nếu link có `?ten=`. Tải ảnh về hoặc chia sẻ thẳng (điện thoại). Đổi Gen Y/Gen Z là ảnh đổi khung ngay. Ảnh xử lý hoàn toàn trên máy khách, không tải lên đâu. Camera cần trang chạy qua `https://` (GitHub Pages là được).
 4. **Toàn màn hình trên điện thoại**: bấm "Mở thiệp" là thiệp tự vào chế độ toàn màn hình (ẩn thanh địa chỉ) trên Android. iPhone (Safari) chưa cho trang web làm việc này — khách chọn **Chia sẻ → Thêm vào MH chính** thì mở từ biểu tượng sẽ hiện toàn màn hình (nhờ `manifest.webmanifest` và các thẻ meta trong `index.html`; biểu tượng ở `assets/icon-*.png`).
 5. **Nhạc nền không tự phát** (và không tải trước) — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
@@ -46,6 +46,7 @@ photos: {
 
 - Trang **chỉ tải đúng các file ghi trong config** — không dò tên, không gọi API, không có request lỗi. Tên file đặt gì cũng được, miễn ghi khớp.
 - Để `""` nếu chưa có ảnh. Không có `cover` thì dùng ảnh album đầu tiên.
+- **Ảnh bìa (`cover`) nên là ảnh dọc tỉ lệ 9:16** (ví dụ 1080×1920), chủ thể đặt ở khoảng 1/3 – 1/2 phía trên: thiệp hiển thị dạng một cột như màn hình điện thoại (rộng tối đa 448px, kể cả trên máy tính), nên ảnh ngang sẽ bị cắt mất hai bên và phần dưới bị thẻ tên che. Ảnh bìa hiện tại là hình minh hoạ vẽ sẵn (vòng hoa đào trái tim, đôi nhẫn) — có ảnh cưới thật thì thay vào.
 - Album hiện 12 ảnh trước, bấm "Xem thêm ảnh" để hiện tiếp (đổi bằng `galleryPageSize`).
 - Ảnh **HEIC của iPhone** cần chuyển sang JPG trước.
 - **Nên thu nhỏ ảnh** còn khoảng 1600–2000px chiều dài (mỗi ảnh 200–400 KB) — đây là phần nặng nhất khi khách mở bằng điện thoại.
