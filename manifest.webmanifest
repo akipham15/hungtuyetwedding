@@ -1,0 +1,15 @@
+{
+  "name": "Hưng & Tuyết — Thiệp cưới",
+  "short_name": "Hưng & Tuyết",
+  "description": "Trân trọng kính mời bạn đến dự lễ cưới của Hưng & Tuyết.",
+  "lang": "vi",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "portrait",
+  "background_color": "#a3121d",
+  "theme_color": "#a3121d",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

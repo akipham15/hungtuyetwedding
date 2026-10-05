@@ -5,7 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Hưng &amp; Tuyết — Thiệp cưới</title>
   <meta name="description" content="Trân trọng kính mời bạn đến dự lễ cưới của Hưng &amp; Tuyết.">
-  <meta name="theme-color" content="#fffaf8">
+  <meta name="theme-color" content="#a3121d">
+  <!-- điện thoại: hiển thị toàn màn hình (ẩn thanh địa chỉ) khi mở từ màn hình chính; JS xin toàn màn hình khi bấm "Mở thiệp" -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hưng &amp; Tuyết">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
   <meta property="og:title" content="Hưng &amp; Tuyết — Chúng mình cưới!">
   <meta property="og:description" content="Trân trọng kính mời bạn đến chung vui trong ngày trọng đại của chúng mình.">
   <meta property="og:type" content="website">
@@ -112,6 +120,8 @@
         <path d="M44 88C48 96 56 100 60 100 66 100 74 96 78 88"/>
       </g>
     </symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13.5" r="3.8"/></g></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4v11m-5-5 5 5 5-5M5 20h14"/></symbol>
     <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5l8.5 7 8.5-7"/></g></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></symbol>
   </svg>
@@ -175,6 +185,7 @@
       <a href="#lich-chieu" data-nav>Lịch trình</a>
       <a href="#luu-y" data-nav>Lưu ý</a>
       <a href="#album" data-nav>Album</a>
+      <a href="#photobooth" data-nav>Photobooth</a>
       <a href="#mung-cuoi" data-nav>Mừng cưới</a>
     </nav>
     <div class="tb-right">
@@ -199,6 +210,7 @@
     <section class="hero" id="hero">
       <div class="hero-photo" id="hero-photo"></div>
       <div class="hero-mask" id="hero-mask">
+        <div class="lights" data-lights aria-hidden="true"></div><!-- Gen Y: dây đèn nháy rạp cưới -->
         <svg class="hero-palm hero-palm-l" aria-hidden="true"><use href="#i-palm"/></svg>
         <svg class="hero-palm hero-palm-r" aria-hidden="true"><use href="#i-palm"/></svg>
         <p class="hero-banner" aria-hidden="true">Vui Tân Hôn</p>
@@ -219,10 +231,19 @@
       </div>
     </section>
 
+    <!-- Gen Z: hai dải chữ chạy bắt chéo -->
+    <div class="ticker" aria-hidden="true"><div class="tk-band"><div class="tk-track" data-ticker></div></div><div class="tk-band tk-rev"><div class="tk-track" data-ticker></div></div></div>
+
     <!-- ============ 2. LỜI NGỎ ============ -->
     <section class="logline" id="loi-dan">
       <div class="logline-body">
         <p class="eyebrow">Lời ngỏ</p>
+        <!-- Gen Z: lời ngỏ hiện như tin nhắn — "đang nhập…" rồi bong bóng chat -->
+        <div class="chat-head" aria-hidden="true">
+          <span class="ch-ava" data-mono>H &amp; T</span>
+          <span class="ch-who"><b><span data-bind="groom.name"></span> &amp; <span data-bind="bride.name"></span></b><small>đang hoạt động</small></span>
+        </div>
+        <div class="chat-typing" aria-hidden="true"><i></i><i></i><i></i></div>
         <p class="logline-text" id="logline" data-bind="quote"></p>
         <p class="logline-sign">— <span data-bind="groom.name"></span> &amp; <span data-bind="bride.name"></span></p>
       </div>
@@ -275,6 +296,23 @@
         </div>
       </div>
       <p class="cd-done" id="cd-done" hidden>Chúng mình đã về chung một nhà <svg class="ic"><use href="#i-heart"/></svg></p>
+
+      <!-- Cào để lộ quà: Gen Y = vé số cào thập niên 90, Gen Z = thẻ cào hologram -->
+      <div class="scratch" id="scratch" data-reveal>
+        <div class="sc-ticket">
+          <div class="sc-top">
+            <span class="only-y sc-brand">Xổ số kiến thiết <b>Hạnh Phúc</b></span>
+            <span class="only-z sc-brand">scratch me ✦</span>
+          </div>
+          <div class="sc-meta only-y"><span>Ký hiệu: <b data-mono>H &amp; T</b></span><span>Mở thưởng: <b data-date-dots></b></span></div>
+          <div class="sc-area">
+            <div class="sc-prize" id="sc-prize"></div>
+            <canvas class="sc-cover" id="sc-cover" aria-hidden="true"></canvas>
+          </div>
+          <p class="sc-hint"><span class="only-y">Lấy ngón tay cào lớp bạc để dò giải 🪙</span><span class="only-z">cào nhẹ để mở quà nha ✨</span></p>
+          <button class="sc-skip" id="sc-skip" type="button">Không cào được? Bấm để mở</button>
+        </div>
+      </div>
     </section>
 
     <!-- ============ 6. LỊCH TRÌNH ============ -->
@@ -313,6 +351,36 @@
       </div>
     </section>
 
+    <!-- ============ 7b. PHOTOBOOTH ============ -->
+    <section class="booth" id="photobooth">
+      <header class="head" data-reveal>
+        <p class="eyebrow">Photobooth</p>
+        <h2 class="h2">Chụp một tấm <i>chung vui</i></h2>
+        <p class="lead">Ảnh tự gắn khung thiệp cưới, chụp xong tải về hoặc đăng story luôn. Đổi Gen Y / Gen Z là đổi khung. Ảnh chỉ nằm trên máy bạn, không gửi đi đâu cả.</p>
+      </header>
+      <div class="pb" id="pb" data-state="idle" data-reveal>
+        <div class="pb-stage">
+          <canvas class="pb-canvas" id="pb-canvas" width="720" height="960" role="img" aria-label="Xem trước ảnh với khung thiệp"></canvas>
+          <img class="pb-result" id="pb-result" alt="Ảnh đã gắn khung thiệp cưới" hidden>
+          <video class="pb-video" id="pb-video" playsinline muted></video>
+          <div class="pb-count" id="pb-count" aria-hidden="true"></div>
+          <div class="pb-flash" id="pb-flash"></div>
+        </div>
+        <p class="pb-msg" id="pb-msg" role="status"></p>
+        <div class="pb-actions">
+          <button class="btn btn-fill" type="button" data-pb="start" data-in="idle"><svg class="ic"><use href="#i-camera"/></svg> Bật camera</button>
+          <button class="btn btn-fill pb-shoot" type="button" data-pb="shoot" data-in="live"><svg class="ic"><use href="#i-camera"/></svg> Chụp</button>
+          <button class="btn" type="button" data-pb="flip" data-in="live">Đổi camera</button>
+          <button class="btn btn-fill" type="button" data-pb="save" data-in="done"><svg class="ic"><use href="#i-download"/></svg> Tải ảnh về</button>
+          <button class="btn" type="button" data-pb="share" data-in="done" hidden>Chia sẻ</button>
+          <button class="btn" type="button" data-pb="again" data-in="done">Chụp lại</button>
+          <label class="btn" data-in="idle live done"><svg class="ic"><use href="#i-image"/></svg> Chọn ảnh có sẵn<input type="file" accept="image/*" id="pb-file" hidden></label>
+        </div>
+      </div>
+    </section>
+
+    <div class="ticker ticker-alt" aria-hidden="true"><div class="tk-band"><div class="tk-track" data-ticker></div></div></div>
+
     <!-- ============ 8. MỪNG CƯỚI ============ -->
     <section class="gift" id="mung-cuoi">
       <header class="head" data-reveal>
@@ -326,6 +394,7 @@
 
   <!-- ============ 9. LỜI KẾT ============ -->
   <footer class="credits" id="danh-de">
+    <div class="lights" data-lights aria-hidden="true"></div>
     <div class="sec-bg" data-bg-slot="3" aria-hidden="true" hidden></div><!-- ảnh nen-3 (nếu có) -->
     <div class="credits-roll" id="credits-roll"></div>
     <div class="the-end" data-reveal>

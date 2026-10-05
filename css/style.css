@@ -1260,3 +1260,294 @@ html:not(.motion) .hero-card { display: none; }
 /* ngày âm lịch của từng sự kiện */
 .show-lunar { margin: -2px 0 8px; font-size: .88rem; font-style: italic; color: var(--muted); }
 [data-theme="modern"] .show-lunar { font-family: var(--f-display); font-size: 1rem; }
+
+/* =========================================================================
+ *  TOÀN MÀN HÌNH TRÊN ĐIỆN THOẠI — chừa chỗ cho tai thỏ / thanh trạng thái
+ * ========================================================================= */
+body { touch-action: manipulation; } /* chạm 2 lần không phóng to trang */
+.topbar { padding-top: calc(14px + env(safe-area-inset-top)); }
+.lb-close { top: calc(16px + env(safe-area-inset-top)); }
+
+/* =========================================================================
+ *  HIỆU ỨNG DÙNG CHUNG: pháo giấy, emoji, tim, lấp lánh
+ * ========================================================================= */
+.fx-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 260; pointer-events: none; }
+.fx-emoji {
+  position: fixed; z-index: 400; pointer-events: none;
+  margin: -14px 0 0 -14px; font-size: 28px; line-height: 1;
+  animation: emo 1.6s cubic-bezier(.15, .7, .3, 1) both;
+}
+@keyframes emo {
+  0% { transform: translate(0, 0) scale(.3); opacity: 0; }
+  12% { transform: translate(calc(var(--dx) * .15), calc(var(--dy) * .15)) scale(var(--s)); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--r)) scale(var(--s)); opacity: 0; }
+}
+.fx-like {
+  position: fixed; z-index: 400; pointer-events: none;
+  width: 96px; height: 96px; margin: -48px 0 0 -48px;
+  color: #ff3d71; filter: drop-shadow(0 10px 20px rgba(255, 61, 113, .45));
+  animation: like .95s var(--ease) forwards;
+}
+.fx-like svg { width: 100%; height: 100%; }
+@keyframes like {
+  0% { transform: scale(0) rotate(-14deg); opacity: 0; }
+  15% { transform: scale(1.25) rotate(-8deg); opacity: 1; }
+  30% { transform: scale(.92) rotate(-8deg); }
+  45% { transform: scale(1.06) rotate(-8deg); }
+  75% { transform: scale(1) rotate(-8deg); opacity: 1; }
+  100% { transform: translateY(-70px) scale(.5) rotate(-8deg); opacity: 0; }
+}
+.fx-spark {
+  position: fixed; z-index: 400; pointer-events: none;
+  margin: -8px 0 0 -6px; font-size: 14px; line-height: 1;
+  color: #e47ea0; text-shadow: 0 0 6px rgba(255, 160, 190, .9);
+  animation: spark .8s ease-out forwards;
+}
+@keyframes spark { to { transform: translate(var(--dx), 28px) scale(.3) rotate(120deg); opacity: 0; } }
+
+/* =========================================================================
+ *  GEN Y — dây đèn nháy rạp cưới, đếm ngược kiểu lịch lật
+ * ========================================================================= */
+.lights { display: none; }
+[data-theme="classic"] .lights {
+  display: block; position: absolute; left: -1%; right: -1%; z-index: 1; height: 32px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 32' preserveAspectRatio='none'%3E%3Cpath d='M0 1Q50 61 100 1' fill='none' stroke='%231d1d1d' stroke-width='1.6' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") 0 0 / 100% 32px no-repeat;
+}
+[data-theme="classic"] .hero-mask .lights { top: max(8vh, 64px); }
+[data-theme="classic"] .credits .lights { top: 16px; }
+.credits { position: relative; }
+.lights i {
+  position: absolute; left: calc(var(--t) * 100%); top: calc(var(--y) - 1px);
+  width: 10px; height: 14px; margin-left: -5px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: var(--c);
+  box-shadow: 0 0 10px 3px var(--c);
+  animation: twinkle 1.2s steps(1) infinite var(--d);
+}
+.lights i::before { content: ""; position: absolute; left: 2px; right: 2px; top: -4px; height: 5px; border-radius: 1px; background: #2a2a2a; }
+@keyframes twinkle { 50% { opacity: .3; box-shadow: none; } }
+
+/* đếm ngược: số lật xuống như tờ lịch / đồng hồ lật */
+[data-theme="classic"] .cd-cells b { position: relative; }
+[data-theme="classic"] .cd-cells b::after { content: ""; position: absolute; left: -4px; right: -4px; top: 50%; height: 2px; background: rgba(28, 63, 148, .2); }
+[data-theme="classic"] .cd-cells b.tick { animation: flip .55s cubic-bezier(.3, 1.4, .5, 1); transform-origin: 50% 50%; }
+@keyframes flip { from { transform: perspective(240px) rotateX(-95deg); opacity: .35; } }
+
+/* =========================================================================
+ *  GEN Z — chữ hologram, dải chữ chạy, tin nhắn, thẻ holo
+ * ========================================================================= */
+/* chữ nhấn đổi màu hologram */
+[data-theme="modern"] .hero-title .amp, [data-theme="modern"] .h2 i, [data-theme="modern"] .te-title, [data-theme="modern"] .hc-names i {
+  background: linear-gradient(100deg, #e8668f 0%, #a985e6 30%, #f0a35e 60%, #e8668f 100%) 0 0 / 300% 100%;
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent; -webkit-text-fill-color: transparent;
+  animation: holo-text 8s linear infinite;
+}
+@keyframes holo-text { to { background-position: 300% 0; } }
+
+/* hai dải chữ chạy bắt chéo nhau */
+.ticker { display: none; }
+[data-theme="modern"] .ticker { display: grid; position: relative; z-index: 2; padding: clamp(34px, 4.5vw, 80px) 0; overflow: hidden; background: var(--paper); }
+[data-theme="modern"] .tk-band {
+  grid-area: 1 / 1; margin: 0 -6vw; padding: 14px 0; overflow: hidden;
+  background: #1d1a1b; color: #fbe1e7;
+  transform: rotate(-3deg);
+  box-shadow: 0 16px 30px -18px rgba(0, 0, 0, .55);
+}
+[data-theme="modern"] .tk-rev { background: linear-gradient(90deg, #f6b3c4, #dcc6f5, #f8dcc0); color: #1d1a1b; transform: rotate(2.5deg); }
+[data-theme="modern"] .ticker-alt { background: var(--white); }
+[data-theme="modern"] .ticker-alt .tk-band { background: var(--wine); color: #fff; transform: rotate(-2deg); }
+.tk-track {
+  display: flex; align-items: center; gap: 22px; width: max-content; padding-right: 22px;
+  font: 700 clamp(1rem, 2.6vw, 1.5rem)/1 var(--f-body); letter-spacing: .02em; text-transform: uppercase; white-space: nowrap;
+  animation: marquee 28s linear infinite;
+}
+.tk-track b { font-weight: 400; color: #f3a6b8; }
+.tk-rev .tk-track b { color: var(--wine); }
+.ticker-alt .tk-track b { color: #ffd6e0; }
+.tk-rev .tk-track { animation-direction: reverse; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+/* lời ngỏ = tin nhắn: đang nhập… rồi bong bóng chat bật lên */
+.chat-head, .chat-typing { display: none; }
+[data-theme="modern"] .chat-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 18px; }
+.ch-ava {
+  position: relative; flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 50%;
+  background: conic-gradient(from 30deg, #f6b3c4, #dcc6f5, #f8dcc0, #f6b3c4);
+  font: italic 500 1rem/1 var(--f-display); color: var(--ink);
+}
+.ch-ava::after { content: ""; position: absolute; right: 0; bottom: 1px; width: 12px; height: 12px; border-radius: 50%; background: #31d158; box-shadow: 0 0 0 2.5px var(--paper); }
+.ch-who { display: grid; line-height: 1.3; }
+.ch-who b { font: 600 1rem/1.3 var(--f-body); color: var(--ink); }
+.ch-who small { font-size: .78rem; color: var(--muted); }
+/* "đang nhập" nằm đè lên chỗ bong bóng (không đẩy trang) */
+[data-theme="modern"] .chat-typing {
+  position: relative; z-index: 1; display: flex; gap: 5px; width: max-content; height: 46px; margin-bottom: -46px;
+  padding: 0 18px; align-items: center;
+  border-radius: 22px 22px 22px 6px; background: #efe4e7;
+  transition: opacity .3s, transform .3s;
+}
+.chat-typing i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); animation: typing 1.2s ease-in-out infinite; }
+.chat-typing i:nth-child(2) { animation-delay: .15s; }
+.chat-typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes typing { 0%, 60%, 100% { transform: none; opacity: .4; } 30% { transform: translateY(-5px); opacity: 1; } }
+[data-theme="modern"] .is-sent .chat-typing { opacity: 0; transform: scale(.8); }
+[data-theme="modern"] .logline-text {
+  max-width: 640px; padding: clamp(18px, 3vw, 26px) clamp(20px, 3.4vw, 30px);
+  border-radius: 28px 28px 28px 8px;
+  background: linear-gradient(135deg, #ee7f9f 0%, #c672a8 100%); color: #fff;
+  font: 400 clamp(1.08rem, 2.2vw, 1.35rem)/1.6 var(--f-body);
+  box-shadow: 0 20px 40px -24px rgba(198, 114, 168, .8);
+  transform-origin: 0 100%;
+  transition: opacity .35s ease, transform .55s cubic-bezier(.3, 1.5, .5, 1);
+}
+[data-theme="modern"] .logline-sign { margin: 10px 0 0 8px; font: 500 .8rem/1.3 var(--f-body); color: var(--muted); transition: opacity .4s .5s; }
+[data-theme="modern"] .logline-sign::after { content: " · đã gửi ✓✓"; color: var(--rose); }
+[data-theme="modern"] .logline:not(.is-sent) .logline-text { opacity: 0; transform: translateY(12px) scale(.85); }
+[data-theme="modern"] .logline:not(.is-sent) .logline-sign { opacity: 0; transition-delay: 0s; }
+
+/* thẻ mừng cưới hologram: nghiêng theo chuột, ánh cầu vồng chạy theo */
+[data-theme="modern"] .bank-card, [data-theme="modern"] .gift-item:nth-child(even) .bank-card { background: linear-gradient(135deg, #fff 0%, #fdf1f5 50%, #f3f0ff 100%); }
+[data-theme="modern"] .gift-item .bank-card, [data-theme="modern"] .gift-item:hover .bank-card {
+  transform: perspective(900px) rotateX(var(--ty, 0deg)) rotateY(var(--tx, 0deg));
+  transition: transform .25s ease-out;
+}
+[data-theme="modern"] .bank-card::before {
+  display: block; inset: 0; width: auto; aspect-ratio: auto; border-radius: inherit;
+  background: linear-gradient(115deg, transparent 22%, rgba(255, 160, 195, .5) 36%, rgba(180, 215, 255, .5) 46%, rgba(215, 195, 255, .5) 55%, rgba(255, 220, 180, .45) 64%, transparent 78%) 0 0 / 250% 100%;
+  background-position: var(--mx, 50%) 0;
+  pointer-events: none;
+}
+@media (hover: none) { [data-theme="modern"] .bank-card::before { animation: holo 4.5s ease-in-out infinite alternate; } }
+@keyframes holo { from { background-position: 0% 0; } to { background-position: 100% 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lights i, .tk-track, .chat-typing i, [data-theme="modern"] .bank-card::before { animation: none !important; }
+  [data-theme="modern"] .hero-title .amp, [data-theme="modern"] .h2 i, [data-theme="modern"] .te-title, [data-theme="modern"] .hc-names i { animation: none; }
+  [data-theme="classic"] .cd-cells b.tick { animation: none; }
+}
+
+/* chỉ hiện ở một phong cách */
+[data-theme="modern"] .only-y, [data-theme="classic"] .only-z { display: none !important; }
+
+/* =========================================================================
+ *  THẺ CÀO — Gen Y: vé số cào thập niên 90 · Gen Z: thẻ cào hologram
+ * ========================================================================= */
+.scratch { max-width: 480px; margin: 56px auto 0; padding: 0 var(--gutter); }
+.sc-ticket { position: relative; padding: 16px 16px 12px; text-align: center; }
+.sc-top { margin-bottom: 10px; }
+.sc-area { position: relative; aspect-ratio: 2.3; overflow: hidden; }
+.sc-prize { position: absolute; inset: 0; display: grid; place-content: center; padding: 10px; }
+.sc-prize > div { display: grid; gap: 4px; }
+.sc-prize small { font: 700 .78rem/1.3 var(--f-body); letter-spacing: .14em; text-transform: uppercase; }
+.sc-prize b { font: 800 clamp(1.5rem, 6vw, 2.1rem)/1.1 var(--f-display); }
+.sc-prize span { font-size: .88rem; }
+.sc-cover { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; transition: opacity .7s ease; }
+.sc-cover:active { cursor: grabbing; }
+.scratch.is-revealed .sc-cover { opacity: 0; pointer-events: none; }
+.scratch.is-revealed .sc-prize > div { animation: prize .7s cubic-bezier(.3, 1.5, .5, 1); }
+@keyframes prize { from { transform: scale(.7); } }
+.sc-hint { margin: 10px 0 0; font-size: .85rem; }
+.sc-skip { margin-top: 2px; padding: 4px 8px; border: 0; background: none; cursor: pointer; font-size: .76rem; text-decoration: underline; opacity: .7; }
+.scratch.is-revealed .sc-hint, .scratch.is-revealed .sc-skip { visibility: hidden; }
+
+/* Gen Y: vé số giấy, viền đỏ răng cưa, tiêu đề in đỏ */
+[data-theme="classic"] .sc-ticket {
+  background: #fffaf0; color: var(--ink);
+  border: 3px solid var(--red); border-radius: 4px;
+  box-shadow: 0 0 0 5px #fffaf0, 0 0 0 7px var(--yellow), 0 26px 40px -22px rgba(0, 0, 0, .6);
+  transform: rotate(-1.5deg);
+}
+[data-theme="classic"] .sc-ticket::before, [data-theme="classic"] .sc-ticket::after { /* lỗ răng cưa hai bên như vé xé */
+  content: ""; position: absolute; top: 12px; bottom: 12px; width: 10px;
+  background: radial-gradient(circle at 50% 50%, #1b3c8f 3.5px, transparent 4px) 0 0 / 10px 14px repeat-y;
+}
+[data-theme="classic"] .sc-ticket::before { left: -8px; }
+[data-theme="classic"] .sc-ticket::after { right: -8px; }
+[data-theme="classic"] .sc-brand { display: block; padding: 6px 10px 4px; background: var(--red); color: var(--yellow); font: 800 1.15rem/1.2 var(--f-display); text-transform: uppercase; letter-spacing: .04em; }
+[data-theme="classic"] .sc-brand b { color: #fff; }
+.sc-meta { display: flex; justify-content: space-between; gap: 8px; margin: -2px 0 10px; font: 600 .74rem/1.3 var(--f-body); color: var(--navy); }
+[data-theme="classic"] .sc-area { border: 2px dashed var(--red); border-radius: 4px; }
+[data-theme="classic"] .sc-prize { background: repeating-linear-gradient(45deg, #fff3c4 0 10px, #ffeaa0 10px 20px); }
+[data-theme="classic"] .sc-prize small { color: var(--navy); }
+[data-theme="classic"] .sc-prize b { color: var(--red); text-shadow: 2px 2px 0 rgba(255, 210, 63, .9); }
+[data-theme="classic"] .sc-prize span { color: var(--ink); font-weight: 600; }
+[data-theme="classic"] .sc-hint, [data-theme="classic"] .sc-skip { color: var(--navy); }
+
+/* Gen Z: thẻ kính mờ bo tròn, quà là chữ hologram */
+[data-theme="modern"] .premiere { grid-template-areas: "head head" "date date" "when lunar" "cd cd" "done done" "sc sc"; }
+@media (min-width: 900px) {
+  [data-theme="modern"] .premiere { grid-template-areas: "head head head head" "date date date when" "date date date lunar" "cd cd cd cd" "done done done done" ". sc sc ."; }
+}
+[data-theme="modern"] .premiere > .scratch { grid-area: sc; max-width: none; width: 100%; margin: 0; padding: 0; }
+[data-theme="modern"] .sc-ticket {
+  padding: clamp(18px, 3vw, 26px); border-radius: 28px; text-align: center;
+  background: rgba(255, 255, 255, .78); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 20px 50px -34px rgba(61, 52, 53, .45);
+}
+[data-theme="modern"] .sc-brand { display: inline-block; padding: .45em 1em; border-radius: 999px; background: #1d1a1b; color: #fbe1e7; font: 600 .8rem/1 var(--f-body); letter-spacing: .04em; transform: rotate(-3deg); }
+[data-theme="modern"] .sc-area { border-radius: 20px; }
+[data-theme="modern"] .sc-prize { background: linear-gradient(135deg, #fff 0%, #fdf1f5 55%, #f3f0ff 100%); }
+[data-theme="modern"] .sc-prize small { color: var(--muted); letter-spacing: .08em; text-transform: none; font-weight: 600; font-size: .9rem; }
+[data-theme="modern"] .sc-prize b {
+  font: 300 clamp(2.4rem, 9vw, 3.4rem)/1 var(--f-display); font-feature-settings: "lnum" 1;
+  background: linear-gradient(100deg, #e8668f, #a985e6, #f0a35e); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+}
+[data-theme="modern"] .sc-prize span { color: var(--ink); }
+[data-theme="modern"] .sc-hint, [data-theme="modern"] .sc-skip { color: var(--muted); }
+
+/* =========================================================================
+ *  PHOTOBOOTH
+ * ========================================================================= */
+.booth { padding: clamp(100px, 14vw, 170px) 0; background: var(--paper); }
+.pb { max-width: calc(460px + 2 * var(--gutter)); margin: 0 auto; padding: 0 var(--gutter); display: grid; gap: 14px; justify-items: center; }
+.pb-stage { position: relative; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; background: var(--beige); box-shadow: 0 30px 60px -30px rgba(0, 0, 0, .45); }
+.pb-canvas, .pb-result { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pb-video { position: absolute; left: 0; top: 0; width: 2px; height: 2px; opacity: 0; pointer-events: none; }
+.pb-count { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; font: 800 9rem/1 var(--f-display); color: #fff; text-shadow: 0 6px 30px rgba(0, 0, 0, .45); }
+.pb-count.pop { animation: count .8s var(--ease); }
+@keyframes count { from { transform: scale(1.8); opacity: 0; } 40% { opacity: 1; } }
+.pb-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.pb-flash.go { animation: flash .7s ease-out; }
+@keyframes flash { from { opacity: 1; } }
+.pb-msg { margin: 0; min-height: 1.4em; text-align: center; font-size: .9rem; color: var(--muted); text-wrap: balance; }
+.pb-msg:empty { display: none; }
+.pb-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.pb-actions label { cursor: pointer; }
+.pb-shoot { padding: 1.1em 2.2em; font-size: 1rem; }
+
+[data-theme="classic"] .booth { position: relative; background: var(--cream); }
+[data-theme="classic"] .booth::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 20px; background: var(--blanket) 0 0 / 60px; box-shadow: inset 0 -3px 0 var(--yellow); }
+[data-theme="classic"] .pb-stage { border: 3px solid var(--yellow); border-radius: 6px; transform: rotate(-1deg); }
+[data-theme="classic"] .pb-count { font-family: var(--f-display); color: var(--yellow); }
+[data-theme="modern"] .pb-stage { border-radius: 28px; }
+[data-theme="modern"] .booth { background: var(--blush-2); }
+@media (prefers-reduced-motion: reduce) { .pb-count.pop, .pb-flash.go, .scratch.is-revealed .sc-prize > div { animation: none; } }
+
+/* =========================================================================
+ *  BỐ CỤC CHUNG — một độ rộng tối đa cho mọi phần, khoảng cách đều nhau
+ * ========================================================================= */
+:root {
+  --maxw: 1080px;                                   /* bề rộng nội dung trên màn to */
+  --wrap: calc(var(--maxw) + 2 * var(--gutter));     /* kể cả lề hai bên */
+  --edge: max(var(--gutter), calc((100vw - var(--maxw)) / 2)); /* lề để thẳng hàng với nội dung */
+  --sec-pad: clamp(80px, 10vw, 140px);               /* khoảng cách trên/dưới mỗi phần */
+}
+.head, .cast-grid, .sides, .note-grid, .gifts, .gallery, .logline, .logline.has-bg { max-width: var(--wrap); }
+.topbar { padding-left: var(--edge); padding-right: var(--edge); }
+@media (min-width: 900px) {
+  [data-theme="modern"] .premiere { padding-left: var(--edge); padding-right: var(--edge); }
+}
+.logline, .cast, .premiere, .shows, .notes, .album, .booth, .gift { padding-top: var(--sec-pad); padding-bottom: var(--sec-pad); }
+
+/* album ít ảnh: số cột theo số ảnh, canh giữa (không dồn hết sang trái) */
+.gallery[data-n="1"] { columns: 1; max-width: calc(520px + 2 * var(--gutter)); }
+.gallery[data-n="2"] { columns: 2; max-width: calc(820px + 2 * var(--gutter)); }
+@media (min-width: 1200px) { .gallery[data-n="3"] { columns: 3; } }
+
+/* tiêu đề, dòng chữ in hoa: ngắt dòng cân, không để một chữ lẻ loi */
+.h2, .cr-role, .cr-names, .lead { text-wrap: balance; }
+
+/* Gen Y: tiêu đề canh giữa thì thẻ mừng cưới cũng canh giữa */
+[data-theme="classic"] .gift-item { justify-items: center; }
