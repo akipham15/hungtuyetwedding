@@ -83,7 +83,7 @@ window.WEDDING = {
   // Ảnh — chép ảnh vào thư mục photos/ rồi ghi ĐÚNG tên file (kể cả đuôi .jpg/.jpeg/.png) vào đây.
   // Để "" nếu chưa có. Trang chỉ tải đúng các file ghi ở đây.
   photos: {
-    cover: "cover.jpg",        // ảnh hiện ra sau khi cuộn qua tên ở phần mở đầu ("" = dùng ảnh album đầu tiên)
+    cover: "cover.webp",        // ảnh hiện ra sau khi cuộn qua tên ở phần mở đầu ("" = dùng ảnh album đầu tiên)
     groom: "chu-re.jpg",       // chân dung chú rể
     bride: "co-dau.jpeg",      // chân dung cô dâu
     bg: ["", "", ""],          // ảnh nền: [Lời ngỏ, Ngày cưới, Lời kết] — "" = dùng hình minh hoạ vẽ sẵn

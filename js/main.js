@@ -228,12 +228,17 @@
     const group = (n) => String(n).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ");
     $("#gifts").innerHTML = list.map((a) => `
       <article class="gift-item" data-reveal>
-        <div class="bank-card">
-          <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span><span class="bc-label">${esc(a.label)}</span></div>
-          <div class="bc-chip"></div>
-          <div class="bc-number">${esc(group(a.number))}</div>
-          <div class="bc-bottom"><span><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></span>${icon("i-heart")}</div>
+        <div class="envelope">
+          <div class="env-back"></div>
+          <div class="env-letter">
+            <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span>${icon("i-heart")}</div>
+            <div class="bc-scratch"><div class="bc-number">${esc(group(a.number))}</div><canvas class="sc-cover" aria-hidden="true"></canvas></div>
+            <div class="bc-bottom"><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></div>
+          </div>
+          <div class="env-front"><span class="env-label">${esc(a.label)}</span></div>
+          <span class="env-seal" aria-hidden="true"><span class="only-y">囍</span><span class="only-z">♡</span></span>
         </div>
+        <p class="sc-hint"><span class="only-y">Cào dải bạc để xem số tài khoản 🪙</span><span class="only-z">cào nhẹ để lộ số tài khoản ✨</span></p>
         ${a.qr ? `<div class="gift-qr"><img src="${esc(a.qr)}" alt="Mã QR ${esc(a.bank)}" loading="lazy" onerror="this.parentNode.remove()"></div>` : ""}
         <button class="btn" type="button" data-copy="${esc(String(a.number).replace(/\s+/g, ""))}">${icon("i-copy", "ic")} Sao chép số tài khoản</button>
       </article>`).join("");
@@ -242,6 +247,7 @@
       const btn = e.target.closest("[data-copy]");
       if (!btn) return;
       const text = btn.dataset.copy;
+      btn.closest(".gift-item")?._reveal?.(true);
       try {
         await navigator.clipboard.writeText(text);
       } catch {
@@ -358,18 +364,28 @@
       if (opened) return;
       opened = true;
       clearTimers();
+      goFullscreen(); // phải gọi ngay trong lúc bấm thì trình duyệt mới cho phép
       // mặc định không tự phát nhạc — khách tự bấm nút nhạc nếu muốn nghe
       window.scrollTo(0, 0);
       $(".cassette-lg", leader)?.classList.add("is-playing");
       leader.classList.remove("is-closing");
       leader.classList.add("is-opening");
+      if (isGenZ()) {
+        const r = $(".ls-note", leader).getBoundingClientRect();
+        emojiBurst(r.left + r.width / 2, r.top + r.height / 2, ["💌", "💖", "💍", "✨", "🥹"], 14, { spread: 1.6, dist: 220 });
+      }
       later(() => {
         leader.classList.add("is-gone"); // Gen Y: hai cánh mở; Gen Z: màn khoá trượt lên
         document.body.classList.remove("is-locked");
+        syncThemeColor();
+        if (!isGenZ()) firecrackers(); // Gen Y: cánh thiệp mở là pháo nổ
         if (motion) ScrollTrigger.refresh();
         later(() => { leader.hidden = true; }, T_MOVE);
+        // Gen Z: mách khách mẹo thả tim (một lần)
+        if (isGenZ() && !hinted) { hinted = true; later(() => toast("Chạm 2 lần vào màn hình để thả tim 💖"), T_MOVE + 600); }
       }, T_PREP);
     };
+    let hinted = false;
     $("#play-btn").addEventListener("click", open);
     $("[data-open-invite]").addEventListener("click", open);
 
@@ -386,6 +402,7 @@
       void leader.offsetWidth;
       leader.classList.add("is-closing");
       leader.classList.remove("is-gone");
+      syncThemeColor();
       later(() => {
         leader.classList.remove("is-opening");
         // chạy lại hiệu ứng thông báo rơi xuống (Gen Z)
@@ -517,6 +534,7 @@
     const grid = $("#gallery"), more = $("#gallery-more");
     if (!photos.length) return ($("#gallery-empty").hidden = false);
     const size = Math.max(1, C.galleryPageSize || 12);
+    grid.dataset.n = Math.min(photos.length, 4); // ít ảnh thì ít cột cho cân
     let shown = 0, refreshTimer;
     // ảnh tải xong làm trang cao thêm -> báo GSAP tính lại vị trí các hiệu ứng (gộp lại cho nhẹ)
     const refresh = () => {
@@ -619,7 +637,7 @@
       .fromTo("#hero-mask", { scale: 1 }, { scale: 7, duration: 1, ease: "power2.in" }, 0)
       .to("#hero-mask", { opacity: 0, duration: 0.4, ease: "none" }, 0.5)
       .fromTo("#hero-photo", { scale: 1.3 }, { scale: 1, duration: 1.3, ease: "none" }, 0)
-      .fromTo(".hero-bike", { x: 0 }, { x: () => window.innerWidth * 0.75, duration: 0.7, ease: "none" }, 0)
+      .fromTo(".hero-bike", { x: 0 }, { x: () => $("#hero").clientWidth * 0.75, duration: 0.7, ease: "none" }, 0)
       .fromTo("#hero-card", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.35 }, 1.0)
       .from("#hero-card > *", { opacity: 0, y: 14, stagger: 0.08, duration: 0.25 }, 1.1)
       .to({}, { duration: 0.3 });
@@ -684,6 +702,577 @@
     });
   }
 
+  /* ------------------------------------------------------ hiệu ứng riêng */
+  const isGenZ = () => document.documentElement.dataset.theme === "modern";
+  const coarse = window.matchMedia("(pointer: coarse)").matches;
+
+  /** Điện thoại: bấm mở thiệp thì vào toàn màn hình (ẩn thanh địa chỉ).
+   *  iPhone chưa cho web làm việc này — khách "Thêm vào MH chính" thì mở toàn màn hình nhờ manifest. */
+  function goFullscreen() {
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!coarse || !req || document.fullscreenElement || document.webkitFullscreenElement) return;
+    try { req.call(el, { navigationUI: "hide" })?.catch?.(() => {}); } catch {}
+  }
+
+  /** Màu thanh trạng thái điện thoại theo màn đang xem */
+  function syncThemeColor() {
+    const meta = $('meta[name="theme-color"]');
+    if (!meta) return;
+    const onCover = !$("#leader").hidden && !$("#leader").classList.contains("is-gone");
+    meta.content = onCover
+      ? (isGenZ() ? "#efd9de" : "#a3121d")
+      : getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#fbf4e6";
+  }
+
+  /** Gen Y: xác pháo đỏ (lẫn vài mảnh kim tuyến vàng, hồng) bay lả tả khắp màn hình */
+  let fxCanvas = null, fxRaf = 0, bits = [];
+  function firecrackers(n = 150) {
+    if (reduceMotion) return;
+    if (!fxCanvas) {
+      fxCanvas = Object.assign(document.createElement("canvas"), { className: "fx-canvas" });
+      fxCanvas.setAttribute("aria-hidden", "true");
+      document.body.append(fxCanvas);
+    }
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const vw = innerWidth, vh = innerHeight;
+    if (!fxRaf) { fxCanvas.width = vw * dpr; fxCanvas.height = vh * dpr; }
+    const ctx = fxCanvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const colors = ["#d8262f", "#d8262f", "#e8343c", "#b8161f", "#c8173a", "#ffd23f", "#f78fb3"];
+    // nửa bắn tung từ hai góc dưới (như pháo nổ), nửa rơi từ trên xuống
+    for (let i = 0; i < n; i++) {
+      const fromSide = i % 2 === 0, left = i % 4 === 0;
+      bits.push({
+        x: fromSide ? (left ? -10 : vw + 10) : Math.random() * vw,
+        y: fromSide ? vh * (0.55 + Math.random() * 0.3) : -20 - Math.random() * vh * 0.5,
+        vx: fromSide ? (left ? 1 : -1) * (4 + Math.random() * 7) : (Math.random() - 0.5) * 1.5,
+        vy: fromSide ? -(9 + Math.random() * 8) : 1.5 + Math.random() * 2,
+        w: 5 + Math.random() * 6, h: 9 + Math.random() * 10,
+        a: Math.random() * 6.3, va: (Math.random() - 0.5) * 0.25,
+        f: Math.random() * 6.3, vf: 0.08 + Math.random() * 0.14, // lật mảnh giấy
+        c: colors[(Math.random() * colors.length) | 0],
+      });
+    }
+    if (fxRaf) return;
+    const step = () => {
+      ctx.clearRect(0, 0, vw, vh);
+      bits = bits.filter((b) => b.y < vh + 30);
+      for (const b of bits) {
+        b.vx *= 0.985;
+        b.vy = Math.min(b.vy + 0.18, 2.6 + b.w * 0.15); // trọng lực + sức cản của giấy
+        b.x += b.vx + Math.sin(b.f) * 0.9;
+        b.y += b.vy;
+        b.a += b.va; b.f += b.vf;
+        ctx.save();
+        ctx.translate(b.x, b.y);
+        ctx.rotate(b.a);
+        ctx.scale(1, Math.cos(b.f));
+        ctx.fillStyle = b.c;
+        ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+        ctx.restore();
+      }
+      if (bits.length) fxRaf = requestAnimationFrame(step);
+      else { fxRaf = 0; ctx.clearRect(0, 0, vw, vh); }
+    };
+    fxRaf = requestAnimationFrame(step);
+  }
+
+  /** Gen Z: emoji bung ra từ một điểm (kiểu thả cảm xúc trên livestream) */
+  function emojiBurst(x, y, list, n = 10, { spread = 1, dist = 160, dur = 1.6 } = {}) {
+    if (reduceMotion) return;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement("span");
+      s.className = "fx-emoji";
+      s.textContent = list[(Math.random() * list.length) | 0];
+      const ang = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * spread;
+      const d = dist * (0.5 + Math.random() * 0.7);
+      s.style.cssText = `left:${x}px;top:${y}px;--dx:${(Math.cos(ang) * d).toFixed(0)}px;--dy:${(Math.sin(ang) * d).toFixed(0)}px;` +
+        `--r:${((Math.random() - 0.5) * 70).toFixed(0)}deg;--s:${(0.8 + Math.random() * 0.8).toFixed(2)};animation-delay:${(Math.random() * dur * 0.2).toFixed(2)}s;animation-duration:${dur}s`;
+      s.addEventListener("animationend", () => s.remove());
+      frag.append(s);
+    }
+    document.body.append(frag);
+  }
+  const emojiRain = (list, n = 26) => {
+    for (let i = 0; i < n; i++) emojiBurst(Math.random() * innerWidth, innerHeight + 10, list, 1, { spread: 0.25, dist: innerHeight * 0.9, dur: 3.2 });
+  };
+
+  /** Gen Z: chạm 2 lần vào màn hình để thả tim (như Instagram) */
+  function likeAt(x, y) {
+    const h = document.createElement("span");
+    h.className = "fx-like";
+    h.innerHTML = icon("i-heart");
+    h.style.cssText = `left:${x}px;top:${y}px`;
+    h.addEventListener("animationend", () => h.remove());
+    document.body.append(h);
+    emojiBurst(x, y, ["💖", "💗", "✨", "🥰"], 7, { dist: 120 });
+  }
+
+  function setupFx() {
+    // dây đèn nháy (Gen Y): bóng đèn treo theo đường võng của dây
+    $$("[data-lights]").forEach((box) => {
+      const n = 21, colors = ["#ff3b3b", "#ffd23f", "#3ddc6a", "#3aa0ff", "#ff7ac8"];
+      box.innerHTML = Array.from({ length: n }, (_, i) => {
+        const t = (i + 0.5) / n;
+        return `<i style="--t:${t.toFixed(3)};--y:${(1 + 120 * t * (1 - t)).toFixed(1)}px;--c:${colors[i % colors.length]};--d:${(i % 3) * -0.4}s"></i>`;
+      }).join("");
+    });
+
+    // dải chữ chạy (Gen Z): lặp 2 lần để chạy vòng liền mạch
+    const dateTxt = W ? `${pad(W.d)}.${pad(W.m)}.${W.y}` : "";
+    const words = [`${G} & ${B}`, "save the date", dateTxt, "chốt đơn ♡", "đi đám cưới thôi", "không gặp không về", "we said yes 💍"].filter(Boolean);
+    const run = words.map((w) => `<span>${esc(w)}</span><b>✦</b>`).join("");
+    $$("[data-ticker]").forEach((t) => (t.innerHTML = run + run));
+
+    // lời ngỏ dạng tin nhắn (Gen Z): "đang nhập…" rồi mới hiện bong bóng chat
+    const logline = $("#loi-dan");
+    if (reduceMotion || !("IntersectionObserver" in window)) logline.classList.add("is-sent");
+    else {
+      const io = new IntersectionObserver(([en]) => {
+        if (!en.isIntersecting) return;
+        io.disconnect();
+        setTimeout(() => logline.classList.add("is-sent"), isGenZ() ? 1300 : 0);
+      }, { threshold: 0.35 });
+      io.observe(logline);
+    }
+
+    // chạm 2 lần để thả tim (Gen Z)
+    let last = 0, lx = 0, ly = 0;
+    document.addEventListener("pointerup", (e) => {
+      if (!isGenZ() || e.button > 0) return;
+      if (e.target.closest("a, button, input, textarea, .lightbox, .leader, .topbar, .tabbar, .g-item")) return;
+      if (e.timeStamp - last < 330 && Math.hypot(e.clientX - lx, e.clientY - ly) < 40) {
+        likeAt(e.clientX, e.clientY);
+        last = 0;
+      } else { last = e.timeStamp; lx = e.clientX; ly = e.clientY; }
+    });
+    // máy tính: bấm đúp không bôi đen chữ ở Gen Z
+    document.addEventListener("mousedown", (e) => { if (isGenZ() && e.detail > 1 && !e.target.closest("input, textarea")) e.preventDefault(); });
+
+    // con trỏ để lại vệt lấp lánh (Gen Z, chỉ máy tính có chuột)
+    if (!coarse && !reduceMotion) {
+      let lastSpark = 0;
+      document.addEventListener("pointermove", (e) => {
+        if (!isGenZ() || e.pointerType !== "mouse" || e.timeStamp - lastSpark < 45) return;
+        lastSpark = e.timeStamp;
+        const s = document.createElement("span");
+        s.className = "fx-spark";
+        s.textContent = Math.random() < 0.7 ? "✦" : "♡";
+        s.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;--dx:${((Math.random() - 0.5) * 30).toFixed(0)}px`;
+        s.addEventListener("animationend", () => s.remove());
+        document.body.append(s);
+      }, { passive: true });
+    }
+
+    // tới lời kết: Gen Y nổ pháo, Gen Z mưa emoji (mỗi lần cuộn tới, cách nhau ít nhất 8 giây)
+    const end = $(".the-end");
+    if (end && "IntersectionObserver" in window) {
+      let lastEnd = 0;
+      new IntersectionObserver(([en]) => {
+        if (!en.isIntersecting || Date.now() - lastEnd < 8000) return;
+        lastEnd = Date.now();
+        if (isGenZ()) emojiRain(["💖", "🥂", "✨", "🎉", "💍", "🫶"]);
+        else firecrackers(120);
+      }, { threshold: 0.6 }).observe(end);
+    }
+
+    document.addEventListener("themechange", syncThemeColor);
+    syncThemeColor();
+  }
+
+  /* ------------------------------------------------------------- thẻ cào */
+  /** Biến một canvas thành lớp phủ cào được. Cào khoảng một nửa (hoặc gọi hàm trả về) là mở.
+   *  Gen Y: lớp bạc như vé số cào; Gen Z: lớp hologram. */
+  function scratchable(cv, { label, onReveal }) {
+    const ctx = cv.getContext("2d"), box = cv.parentElement;
+    let revealed = false, drawn = 0, last = null, moves = 0;
+    const reveal = (silent = false) => {
+      if (revealed) return;
+      revealed = true;
+      box.classList.add("is-revealed");
+      onReveal?.(cv, silent);
+    };
+
+    const paint = async () => {
+      if (revealed) return;
+      const w = cv.clientWidth, h = cv.clientHeight;
+      if (!w || !h) return;
+      try { await document.fonts.load(isGenZ() ? "700 20px 'Be Vietnam Pro'" : "800 20px 'Baloo 2'"); } catch {}
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      cv.width = w * dpr; cv.height = h * dpr; drawn = w;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const text = label(isGenZ());
+      const fit = (weight, family, max) => { let size = max; do { ctx.font = `${weight} ${size}px ${family}`; } while (ctx.measureText(text).width > w * 0.84 && --size > 9); };
+      if (isGenZ()) {
+        const g = ctx.createLinearGradient(0, 0, w, h);
+        ["#f6b3c4", "#dcc6f5", "#bfe0f7", "#f8dcc0", "#f6b3c4"].forEach((c, i, arr) => g.addColorStop(i / (arr.length - 1), c));
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(255,255,255,.8)";
+        for (let i = 0; i < 14; i++) { ctx.font = `${8 + ((i * 7) % 8)}px sans-serif`; ctx.fillText("✦", ((i * 97) % 100) / 100 * w, ((i * 61) % 100) / 100 * h); }
+        fit(700, "'Be Vietnam Pro', sans-serif", Math.round(h * 0.4));
+        ctx.fillStyle = "#fff"; ctx.shadowColor = "rgba(140,85,99,.45)"; ctx.shadowBlur = 8;
+        ctx.fillText(text, w / 2, h / 2 + 1);
+        ctx.shadowBlur = 0;
+      } else {
+        const g = ctx.createLinearGradient(0, 0, w, h);
+        g.addColorStop(0, "#b9b9b9"); g.addColorStop(0.45, "#efefef"); g.addColorStop(0.55, "#d6d6d6"); g.addColorStop(1, "#a4a4a4");
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
+        for (let x = -h; x < w; x += 8) { ctx.beginPath(); ctx.moveTo(x, h); ctx.lineTo(x + h, 0); ctx.stroke(); }
+        fit(800, "'Baloo 2', sans-serif", Math.round(h * 0.42));
+        ctx.fillStyle = "#6a6a6a";
+        ctx.fillText(text, w / 2, h / 2 + 2);
+      }
+    };
+
+    /** phần trăm lớp phủ đã bị cào (lấy mẫu thưa cho nhẹ) */
+    const cleared = () => {
+      const { data } = ctx.getImageData(0, 0, cv.width, cv.height);
+      let n = 0, t = 0;
+      for (let i = 3; i < data.length; i += 4 * 16) { t++; if (data[i] < 40) n++; }
+      return t ? n / t : 0;
+    };
+    const scratchTo = (e) => {
+      const r = cv.getBoundingClientRect();
+      const p = { x: e.clientX - r.left, y: e.clientY - r.top };
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.strokeStyle = "#000"; // nét xoá phải đặc (lớp bạc vẽ sọc bằng nét trắng mờ)
+      ctx.lineCap = ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(26, r.height * 0.6);
+      ctx.beginPath();
+      ctx.moveTo((last || p).x, (last || p).y);
+      ctx.lineTo(p.x + 0.1, p.y);
+      ctx.stroke();
+      last = p;
+      if (++moves % 6 === 0 && cleared() > 0.45) reveal();
+    };
+    cv.addEventListener("pointerdown", (e) => { if (revealed) return; try { cv.setPointerCapture(e.pointerId); } catch {} last = null; scratchTo(e); });
+    cv.addEventListener("pointermove", (e) => { if (last && !revealed) scratchTo(e); });
+    ["pointerup", "pointercancel"].forEach((t) => cv.addEventListener(t, () => {
+      last = null;
+      if (!revealed && cleared() > 0.45) reveal();
+    }));
+
+    document.addEventListener("themechange", paint);
+    window.addEventListener("resize", () => { if (cv.clientWidth !== drawn) paint(); });
+    paint();
+    return reveal;
+  }
+
+  /** Mừng cưới: cào dải phủ để lộ số tài khoản (nút "Sao chép" vẫn chép được ngay, không cần cào) */
+  function setupScratch() {
+    $$(".gift-item").forEach((item) => {
+      const cv = $(".sc-cover", item);
+      if (!cv) return;
+      item._reveal = scratchable(cv, {
+        label: (z) => (z ? "cào để lộ số ✨" : "CÀO ĐỂ XEM SỐ TÀI KHOẢN"),
+        onReveal: (c, silent) => {
+          item.classList.add("is-revealed");
+          if (silent) return;
+          navigator.vibrate?.([30, 40, 70]);
+          const r = c.getBoundingClientRect();
+          if (isGenZ()) emojiBurst(r.left + r.width / 2, r.top + r.height / 2, ["💸", "💖", "✨", "🥂", "💍"], 14, { spread: 1.8, dist: 180 });
+          else firecrackers(100);
+        },
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------ photobooth */
+  /** Chụp ảnh (hoặc chọn ảnh) rồi gắn khung thiệp theo phong cách đang xem. Mọi thứ xử lý trên máy khách. */
+  function setupBooth() {
+    const pb = $("#pb"), view = $("#pb-canvas"), vctx = view.getContext("2d");
+    const video = $("#pb-video"), result = $("#pb-result"), msg = $("#pb-msg");
+    const FW = 1080, FH = 1440; // kích thước ảnh xuất (3:4)
+    let stream = null, facing = "user", raf = 0, busy = false;
+    let src = null, mirror = false;  // ảnh nguồn đang dùng (ảnh chụp / ảnh chọn)
+    let coverImg = null;              // ảnh bìa để xem trước khung khi chưa chụp
+    let layers = null, noSvg = false, blob = null, blobUrl = "";
+
+    const say = (t = "") => (msg.textContent = t);
+    const setState = (s) => {
+      pb.dataset.state = s;
+      $$("[data-in]", pb).forEach((b) => (b.hidden = !b.dataset.in.split(" ").includes(s)));
+      const share = $('[data-pb="share"]', pb);
+      share.hidden = s !== "done" || !navigator.canShare?.({ files: [new File([""], "a.jpg", { type: "image/jpeg" })] });
+      result.hidden = s !== "done";
+      view.hidden = s === "done";
+    };
+
+    /* ---- vẽ ---- */
+    const rr = (c, x, y, w, h, r) => {
+      c.beginPath();
+      c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+      c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+    };
+    const canvasOf = (w, h) => Object.assign(document.createElement("canvas"), { width: w, height: h });
+    const svgImg = (id, color = "") => new Promise((res) => {
+      const sym = $("#" + id);
+      if (!sym || noSvg) return res(null);
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sym.getAttribute("viewBox")}" style="color:${color}"><defs>${$("#dove")?.outerHTML || ""}</defs>${sym.innerHTML}</svg>`;
+      const img = new Image();
+      img.onload = () => res(img);
+      img.onerror = () => res(null);
+      img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    });
+    const dateDots = W ? `${pad(W.d)}.${pad(W.m)}.${W.y}` : "";
+    // ô ảnh trong khung theo từng phong cách
+    const BOX = { y: { x: 86, y: 196, w: 908, h: 930, r: 6 }, z: { x: 80, y: 80, w: 920, h: 1080, r: 56 } };
+
+    /** Dựng 2 lớp tĩnh của khung (nền dưới ảnh, trang trí đè lên ảnh) — chỉ dựng lại khi đổi phong cách */
+    async function buildLayers() {
+      const z = isGenZ();
+      try {
+        await Promise.all(["800 40px 'Baloo 2'", "700 40px 'Baloo 2'", "40px VT323", "italic 300 40px 'Cormorant Garamond'", "500 40px 'Be Vietnam Pro'", "600 40px 'Be Vietnam Pro'"].map((f) => document.fonts.load(f)));
+      } catch {}
+      const under = canvasOf(FW, FH), over = canvasOf(FW, FH);
+      const u = under.getContext("2d"), o = over.getContext("2d");
+      [u, o].forEach((c) => { c.textAlign = "center"; c.textBaseline = "alphabetic"; });
+      const b = BOX[z ? "z" : "y"];
+      const who = `${G} & ${B}`;
+
+      if (!z) {
+        const [doves, palm] = await Promise.all([svgImg("i-doves"), svgImg("i-palm")]);
+        // nền thiệp đỏ, chữ Song Hỷ mờ, viền đôi vàng
+        const g = u.createRadialGradient(FW / 2, FH * 0.45, 100, FW / 2, FH * 0.45, FH * 0.8);
+        g.addColorStop(0, "#c8202c"); g.addColorStop(0.7, "#a3121d"); g.addColorStop(1, "#8a0f18");
+        u.fillStyle = g; u.fillRect(0, 0, FW, FH);
+        u.fillStyle = "rgba(255,210,63,.09)"; u.font = "700 980px serif"; u.fillText("囍", FW / 2, FH * 0.78);
+        u.strokeStyle = "rgba(255,210,63,.8)"; u.lineWidth = 5; u.strokeRect(28, 28, FW - 56, FH - 56);
+        u.lineWidth = 2; u.strokeRect(42, 42, FW - 84, FH - 84);
+        if (palm) {
+          u.save(); u.translate(40, 20); u.rotate(-0.12); u.drawImage(palm, -60, -30, 330, 300); u.restore();
+          u.save(); u.translate(FW - 40, 20); u.scale(-1, 1); u.rotate(-0.12); u.drawImage(palm, -60, -30, 330, 300); u.restore();
+        }
+        // viền trắng quanh ảnh như ảnh rửa
+        u.fillStyle = "#fffdf8"; u.shadowColor = "rgba(0,0,0,.4)"; u.shadowBlur = 30; u.shadowOffsetY = 10;
+        u.fillRect(b.x - 18, b.y - 18, b.w + 36, b.h + 36);
+        u.shadowColor = "transparent";
+        // chữ cắt dán "VUI TÂN HÔN"
+        o.font = "800 112px 'Baloo 2', sans-serif"; o.lineJoin = "round";
+        o.fillStyle = "rgba(0,0,0,.3)"; o.fillText("VUI TÂN HÔN", FW / 2 + 5, 158);
+        o.strokeStyle = "#fff"; o.lineWidth = 14; o.strokeText("VUI TÂN HÔN", FW / 2, 152);
+        o.fillStyle = "#d8262f"; o.fillText("VUI TÂN HÔN", FW / 2, 152);
+        // dấu ngày màu cam kiểu máy ảnh phim
+        if (STAMP) {
+          o.save(); o.textAlign = "right"; o.font = "64px VT323, monospace";
+          o.shadowColor = "rgba(255,120,40,.95)"; o.shadowBlur = 14; o.fillStyle = "#ff9a4d";
+          o.fillText(STAMP, b.x + b.w - 30, b.y + b.h - 30); o.restore();
+        }
+        if (doves) o.drawImage(doves, FW / 2 - 150, b.y + b.h - 120, 300, 172);
+        // tên, ngày, khách
+        o.font = "800 118px 'Baloo 2', sans-serif";
+        o.fillStyle = "rgba(0,0,0,.3)"; o.fillText(`${G} ♥ ${B}`, FW / 2 + 5, 1290);
+        o.fillStyle = "#ffd23f"; o.fillText(`${G} ♥ ${B}`, FW / 2, 1284);
+        o.font = "700 52px 'Baloo 2', sans-serif"; o.fillStyle = "#fff";
+        o.fillText(W ? `${pad(W.d)} - ${pad(W.m)} - ${W.y}` : "", FW / 2, 1352);
+        o.font = "600 34px 'Be Vietnam Pro', sans-serif"; o.fillStyle = "#fbe7c0";
+        o.fillText(GUEST ? `Kỷ niệm ngày vui · có mặt: ${GUEST}` : "Kỷ niệm ngày vui của chúng mình", FW / 2, 1404);
+      } else {
+        const bloom = await svgImg("i-bloom", "#a86f7d");
+        // nền pastel với các mảng màu mờ
+        const g = u.createLinearGradient(0, 0, FW, FH);
+        g.addColorStop(0, "#fde8ee"); g.addColorStop(0.5, "#efe0f5"); g.addColorStop(1, "#fbe6d4");
+        u.fillStyle = g; u.fillRect(0, 0, FW, FH);
+        [[120, 1300, 420, "rgba(243,166,184,.55)"], [980, 1250, 380, "rgba(220,198,245,.6)"], [900, 120, 320, "rgba(248,220,192,.6)"]].forEach(([x, y, r, c]) => {
+          const rg = u.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, c); rg.addColorStop(1, "rgba(255,255,255,0)");
+          u.fillStyle = rg; u.fillRect(0, 0, FW, FH);
+        });
+        if (bloom) { u.globalAlpha = 0.7; u.drawImage(bloom, 6, 1150, 120, 260); u.drawImage(bloom, FW - 110, 1180, 100, 216); u.globalAlpha = 1; }
+        u.fillStyle = "#fff"; u.shadowColor = "rgba(61,52,53,.3)"; u.shadowBlur = 40; u.shadowOffsetY = 16;
+        rr(u, b.x - 14, b.y - 14, b.w + 28, b.h + 28, b.r + 12); u.fill();
+        u.shadowColor = "transparent";
+        // sticker
+        const pill = (text, x, y, rot, bg, fg, size = 40) => {
+          o.save(); o.translate(x, y); o.rotate(rot);
+          o.font = `600 ${size}px 'Be Vietnam Pro', sans-serif`;
+          const w = o.measureText(text).width + size * 1.3, h = size * 1.75;
+          o.shadowColor = "rgba(61,52,53,.35)"; o.shadowBlur = 24; o.shadowOffsetY = 10;
+          o.fillStyle = bg; rr(o, -w / 2, -h / 2, w, h, h / 2); o.fill();
+          o.shadowColor = "transparent"; o.fillStyle = fg; o.textBaseline = "middle"; o.fillText(text, 0, 2);
+          o.restore();
+        };
+        pill("save the date ✦", 250, 150, -0.16, "#8c5563", "#fff");
+        pill("chốt đơn ♡", 830, 1110, 0.1, "#f1e2e2", "#8c5563", 38);
+        if (W) {
+          o.save(); o.translate(905, 175); o.rotate(0.2);
+          o.shadowColor = "rgba(61,52,53,.35)"; o.shadowBlur = 24; o.shadowOffsetY = 10;
+          o.fillStyle = "#fff"; o.beginPath(); o.arc(0, 0, 105, 0, Math.PI * 2); o.fill();
+          o.shadowColor = "transparent"; o.setLineDash([8, 7]); o.strokeStyle = "#a86f7d"; o.lineWidth = 3;
+          o.beginPath(); o.arc(0, 0, 92, 0, Math.PI * 2); o.stroke();
+          o.fillStyle = "#3d3435"; o.textBaseline = "middle"; o.font = "400 50px 'Cormorant Garamond', serif";
+          o.fillText(`${pad(W.d)}.${pad(W.m)}.${String(W.y).slice(2)}`, 0, 2);
+          o.restore();
+        }
+        o.font = "110px sans-serif"; o.fillText("💍", 150, 1150);
+        // tên chữ hologram, ngày, khách
+        o.font = "italic 300 128px 'Cormorant Garamond', serif";
+        const tg = o.createLinearGradient(FW / 2 - 380, 0, FW / 2 + 380, 0);
+        tg.addColorStop(0, "#e8668f"); tg.addColorStop(0.5, "#a985e6"); tg.addColorStop(1, "#f0a35e");
+        o.fillStyle = tg; o.fillText(who, FW / 2, 1284);
+        o.font = "500 36px 'Be Vietnam Pro', sans-serif"; o.fillStyle = "#847876";
+        o.fillText(`${dateDots} · we said yes 💍`, FW / 2, 1370);
+        if (GUEST) { o.font = "600 34px 'Be Vietnam Pro', sans-serif"; o.fillStyle = "#8c5563"; o.fillText(`ft. ${GUEST} ✨`, FW / 2, 1418); }
+      }
+      layers = { under, over, box: b, z };
+    }
+
+    /** Vẽ ảnh nguồn vào ô ảnh (cắt vừa khung, lật như gương nếu là camera trước) */
+    function compose(c, scale, source, flip) {
+      const { under, over, box: b, z } = layers;
+      c.save();
+      c.scale(scale, scale);
+      c.drawImage(under, 0, 0);
+      c.save();
+      rr(c, b.x, b.y, b.w, b.h, b.r); c.clip();
+      const sw = source?.videoWidth || source?.naturalWidth || source?.width || 0;
+      const sh = source?.videoHeight || source?.naturalHeight || source?.height || 0;
+      if (sw && sh) {
+        const k = Math.max(b.w / sw, b.h / sh), dw = sw * k, dh = sh * k;
+        if (flip) { c.translate(b.x * 2 + b.w, 0); c.scale(-1, 1); }
+        c.drawImage(source, b.x + (b.w - dw) / 2, b.y + (b.h - dh) / 2, dw, dh);
+        c.setTransform(scale, 0, 0, scale, 0, 0);
+        // Gen Y: màu phim ấm, hơi phai
+        if (!z) { c.fillStyle = "rgba(255,160,80,.16)"; c.globalCompositeOperation = "soft-light"; c.fillRect(b.x, b.y, b.w, b.h); c.globalCompositeOperation = "source-over"; c.fillStyle = "rgba(255,244,225,.07)"; c.fillRect(b.x, b.y, b.w, b.h); }
+      } else {
+        c.fillStyle = z ? "#f1e2e2" : "#efe2c8"; c.fillRect(b.x, b.y, b.w, b.h);
+        c.fillStyle = z ? "#a86f7d" : "#1c3f94"; c.font = "600 44px 'Be Vietnam Pro', sans-serif"; c.textAlign = "center";
+        c.fillText("Ảnh của bạn ở đây 📸", b.x + b.w / 2, b.y + b.h / 2);
+      }
+      c.restore();
+      c.drawImage(over, 0, 0);
+      c.restore();
+    }
+    const preview = () => { if (layers) compose(vctx, view.width / FW, src || coverImg, src ? mirror : false); };
+
+    /* ---- camera ---- */
+    const stopCam = () => {
+      cancelAnimationFrame(raf); raf = 0;
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = null;
+      video.srcObject = null;
+    };
+    const loop = () => { if (layers && video.readyState >= 2) compose(vctx, view.width / FW, video, mirror); raf = requestAnimationFrame(loop); };
+    async function startCam() {
+      if (!navigator.mediaDevices?.getUserMedia) return say("Trình duyệt này chưa cho dùng camera — bạn bấm “Chọn ảnh có sẵn” nhé.");
+      say("Đang mở camera…");
+      stopCam();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facing, width: { ideal: 1440 }, height: { ideal: 1920 } }, audio: false });
+      } catch (err) {
+        setState("idle");
+        return say(err?.name === "NotAllowedError" ? "Bạn chưa cho phép dùng camera. Bật lại quyền camera cho trang này, hoặc bấm “Chọn ảnh có sẵn”." : "Không mở được camera — bạn bấm “Chọn ảnh có sẵn” nhé.");
+      }
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      mirror = facing === "user";
+      say("");
+      setState("live");
+      loop();
+    }
+
+    /* ---- xuất ảnh ---- */
+    async function render() {
+      const out = canvasOf(FW, FH);
+      compose(out.getContext("2d"), 1, src, mirror);
+      try {
+        blob = await new Promise((res, rej) => out.toBlob((b) => (b ? res(b) : rej(new Error("blob"))), "image/jpeg", 0.92));
+      } catch (e) {
+        // vài trình duyệt chặn xuất ảnh khi khung có hình SVG — dựng lại khung không có SVG rồi thử lại
+        if (noSvg) throw e;
+        noSvg = true;
+        await buildLayers();
+        return render();
+      }
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      blobUrl = URL.createObjectURL(blob);
+      result.src = blobUrl;
+      setState("done");
+    }
+    const flash = () => { const f = $("#pb-flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go"); };
+
+    async function shoot() {
+      if (busy || !stream) return;
+      busy = true;
+      const cnt = $("#pb-count");
+      for (const n of reduceMotion ? [] : [3, 2, 1]) {
+        cnt.textContent = n; cnt.classList.remove("pop"); void cnt.offsetWidth; cnt.classList.add("pop");
+        await new Promise((r) => setTimeout(r, 800));
+      }
+      cnt.textContent = "";
+      // giữ lại khung hình vừa chụp để đổi khung (Gen Y/Gen Z) vẫn dùng được
+      const snap = canvasOf(video.videoWidth, video.videoHeight);
+      snap.getContext("2d").drawImage(video, 0, 0);
+      src = snap;
+      flash();
+      navigator.vibrate?.(40);
+      stopCam();
+      try { await render(); } catch { say("Chưa lưu được ảnh, bạn thử lại nhé."); setState("idle"); }
+      busy = false;
+      const r = result.getBoundingClientRect();
+      if (isGenZ()) emojiBurst(r.left + r.width / 2, r.top + r.height / 3, ["📸", "✨", "💖", "🥰"], 12);
+    }
+
+    $("#pb-file").addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      if (!file) return;
+      stopCam();
+      const img = new Image();
+      img.onload = async () => {
+        src = img; mirror = false;
+        try { await render(); say(""); } catch { say("Chưa lưu được ảnh, bạn thử ảnh khác nhé."); }
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => say("Không đọc được ảnh này (ảnh HEIC của iPhone cần chọn dạng JPG).");
+      img.src = URL.createObjectURL(file);
+    });
+
+    pb.addEventListener("click", async (e) => {
+      const act = e.target.closest("[data-pb]")?.dataset.pb;
+      if (act === "start") startCam();
+      else if (act === "shoot") shoot();
+      else if (act === "flip") { facing = facing === "user" ? "environment" : "user"; startCam(); }
+      else if (act === "again") startCam();
+      else if (act === "save" && blobUrl) {
+        const a = Object.assign(document.createElement("a"), { href: blobUrl, download: `${G}-${B}-photobooth.jpg`.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/\s+/g, "-") });
+        document.body.append(a); a.click(); a.remove();
+        toast("Đã lưu ảnh 📸");
+      } else if (act === "share" && blob) {
+        try { await navigator.share({ files: [new File([blob], "photobooth.jpg", { type: "image/jpeg" })], title: `${G} & ${B}` }); } catch {}
+      }
+    });
+
+    // tắt camera khi cuộn đi chỗ khác hoặc chuyển ứng dụng
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(([en]) => { if (!en.isIntersecting && stream) { stopCam(); setState(src ? "done" : "idle"); if (!src) preview(); } }).observe(pb);
+    }
+    document.addEventListener("visibilitychange", () => { if (document.hidden && stream) { stopCam(); setState(src ? "done" : "idle"); } });
+
+    // đổi phong cách: dựng lại khung; nếu đã có ảnh thì xuất lại ảnh với khung mới
+    document.addEventListener("themechange", async () => {
+      await buildLayers();
+      if (pb.dataset.state === "done" && src) render().catch(() => {});
+      else if (!stream) preview();
+    });
+
+    setState("idle");
+    // xem trước khung bằng ảnh bìa của cô dâu chú rể
+    const P = C.photos || {};
+    const coverName = P.cover || (P.album || [])[0];
+    buildLayers().then(() => {
+      preview();
+      if (!coverName) return;
+      const img = new Image();
+      img.onload = () => { coverImg = img; if (pb.dataset.state === "idle") preview(); };
+      img.src = PHOTO_DIR + String(coverName).split("/").map(encodeURIComponent).join("/");
+    });
+  }
+
   /* -------------------------------------------------------------- giao diện */
   function setupTheme() {
     const root = document.documentElement;
@@ -728,6 +1317,9 @@
     setupScroll();
     setupLightbox();
     runLeader();
+    setupFx();
+    setupScratch();
+    setupBooth();
     await loadPhotos();
     setupMotion();
   }
