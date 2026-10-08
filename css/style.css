@@ -146,7 +146,7 @@ button { font: inherit; color: inherit; }
 .tabbar { display: none; }
   .tabbar {
     position: fixed; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 85;
-    display: grid; grid-template-columns: repeat(4, 1fr);
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); grid-auto-flow: column;
     padding: 6px;
     border: 1px solid var(--line); border-radius: 20px;
     background: rgba(255, 255, 255, .92);
@@ -294,6 +294,7 @@ html:not(.motion) .hero-card { display: none; }
 .side-parents b { font-weight: 600; color: var(--ink); }
 .side-addr { margin: 12px 0 0; display: flex; align-items: center; gap: 6px; font-size: .92rem; color: var(--ink); }
 .side-addr .ic { color: var(--rose); }
+a.side-addr { text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 3px; }
 
 .show-list { list-style: none; margin: 0; padding: 0; }
 .show { display: grid; grid-template-columns: 92px 1fr; gap: 18px; padding: 24px clamp(20px, calc(4 * var(--cw)), 34px); border-top: 1px solid var(--line); }
@@ -1448,12 +1449,12 @@ body { touch-action: manipulation; } /* chạm 2 lần không phóng to trang */
 [data-theme="classic"] .gift-item { justify-items: center; }
 
 /* =========================================================================
- *  KHUNG MỘT CỘT (giống max-w-md của Tailwind = 28rem = 448px)
+ *  KHUNG MỘT CỘT (max-w-md của Tailwind 28rem, nới rộng 20% → 33.6rem ≈ 538px)
  *  Màn to: thiệp hiển thị như một màn hình điện thoại ở giữa, hai bên là phông nền.
  *  --cw thay cho 1vw để mọi kích thước theo bề rộng cột, không theo màn hình.
  * ========================================================================= */
 :root {
-  --app: 28rem;
+  --app: 538px; /* số nguyên: tránh vạch lệch nửa pixel ở mép thiệp */
   --cw: min(1vw, calc(var(--app) / 100));
   --side: max(0px, calc((100% - var(--app)) / 2)); /* khoảng trống mỗi bên cột (100% = bề rộng màn, không tính thanh cuộn) */
 }
@@ -1465,8 +1466,11 @@ html {
 html[data-theme="classic"] {
   background: linear-gradient(180deg, rgba(255, 255, 255, .07), rgba(0, 0, 0, .22)), repeating-linear-gradient(90deg, #1b3c8f 0 22px, #2447a3 34px, #1b3c8f 48px, #16337c 60px) fixed;
 }
-html[data-theme="modern"] {
-  background: radial-gradient(circle at 15% 20%, #f3d3da 0%, transparent 40%), radial-gradient(circle at 85% 80%, #e6d7ef 0%, transparent 42%), linear-gradient(160deg, #f8ece9, #efe1d8) fixed;
+html[data-theme="modern"] { background: #f3e6e2; }
+/* nền Gen Z vẽ trên một lớp cố định riêng: background-attachment: fixed làm trình duyệt vẽ lại gradient mỗi lần cuộn (giật ~10 fps) */
+html[data-theme="modern"]::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle at 15% 20%, #f3d3da 0%, transparent 40%), radial-gradient(circle at 85% 80%, #e6d7ef 0%, transparent 42%), linear-gradient(160deg, #f8ece9, #efe1d8);
 }
 body {
   max-width: var(--app);
@@ -1551,3 +1555,197 @@ html.js.is-locked { overflow: hidden; }
   box-shadow: 0 0 calc(3px + var(--bk) * 14px) calc(var(--bk) * 4px) var(--c);
 }
 .is-beat .tape-btn.is-playing .np-eq i { animation: none; height: calc(22% + var(--bk) * 78%); }
+
+/* ---------------------------------------------------------- chọn bài hát */
+.tape-btn { overflow: visible; }
+.tape-list {
+  position: absolute; top: -10px; left: -10px; z-index: 2;
+  width: 28px; height: 28px; display: grid; place-items: center;
+  border-radius: 50%; background: #fff; color: var(--wine, #7a2b35);
+  border: 1px solid var(--line, rgba(0,0,0,.12)); box-shadow: 0 4px 10px -4px rgba(0,0,0,.35);
+  font: 600 14px/1 system-ui, sans-serif; cursor: pointer;
+}
+.tape-list[hidden] { display: none; }
+.tape-btn.is-compact .tape-list { top: -8px; left: -8px; width: 24px; height: 24px; font-size: 12px; }
+.msheet {
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: flex-end; justify-content: center;
+  padding: 16px 14px calc(18px + env(safe-area-inset-bottom)); /* thẻ nổi, tách khỏi mép dưới màn hình */
+  background: rgba(20, 12, 14, .5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: msheet-fade .25s ease-out;
+}
+.msheet[hidden] { display: none; }
+@keyframes msheet-fade { from { opacity: 0; } }
+@keyframes msheet-up { from { transform: translateY(40px); opacity: 0; } }
+.msheet-panel {
+  position: relative; width: min(100%, calc(var(--app) - 28px)); max-height: 72vh; overflow: auto;
+  padding: 16px 14px 14px;
+  border-radius: 24px;
+  background: #fffaf3; color: #3a2326;
+  box-shadow: 0 24px 60px -18px rgba(0, 0, 0, .55), 0 0 0 1px rgba(255, 255, 255, .5) inset;
+  animation: msheet-up .32s cubic-bezier(.2, .8, .2, 1);
+}
+.msheet-grip { display: none; width: 40px; height: 4px; margin: 0 auto 12px; border-radius: 4px; background: currentColor; opacity: .18; }
+.msheet-head { display: flex; align-items: center; gap: 12px; padding: 0 4px 12px; margin-bottom: 6px; border-bottom: 1px dashed rgba(122, 43, 53, .25); }
+.msheet-badge { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: var(--wine, #b3222f); color: #ffe7a8; }
+.msheet-badge svg { width: 20px; height: 20px; }
+.msheet-ttl { display: grid; line-height: 1.25; min-width: 0; }
+.msheet-ttl small { font: 600 .66rem/1.3 var(--f-body, system-ui); letter-spacing: .14em; text-transform: uppercase; opacity: .55; }
+.msheet-ttl b { font: 700 1.15rem/1.2 var(--f-display, inherit); color: var(--wine, #b3222f); }
+.msheet-x { margin-left: auto; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(0, 0, 0, .05); color: inherit; font-size: 15px; cursor: pointer; transition: background .2s; }
+.msheet-x:hover { background: rgba(0, 0, 0, .1); }
+.msheet-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.msheet-item {
+  width: 100%; display: flex; align-items: center; gap: 14px; text-align: left;
+  padding: 11px 12px; border: 0; border-radius: 14px; background: none; color: inherit;
+  font: inherit; cursor: pointer; transition: background .2s, transform .2s;
+}
+.msheet-item:hover, .msheet-item:focus-visible { background: rgba(122, 43, 53, .06); outline: none; }
+.msheet-item:active { transform: scale(.985); }
+.mi-no { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(122, 43, 53, .2); font: 600 .78rem/1 var(--f-body, system-ui); font-variant-numeric: tabular-nums; color: var(--wine, #b3222f); }
+.mi-txt { display: grid; min-width: 0; line-height: 1.3; }
+.mi-txt b { font-weight: 600; font-size: .98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-txt small { font-size: .8rem; opacity: .6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-eq { display: none; margin-left: auto; flex: none; align-items: flex-end; gap: 2px; height: 16px; }
+.mi-eq i { width: 3px; height: 35%; border-radius: 2px; background: currentColor; }
+.msheet.is-playing .is-current .mi-eq i { animation: eq .9s ease-in-out infinite; }
+.mi-eq i:nth-child(2) { animation-delay: -.3s; }
+.mi-eq i:nth-child(3) { animation-delay: -.6s; }
+.msheet-item.is-current { background: linear-gradient(135deg, var(--wine, #b3222f), #8f1822); color: #fff; box-shadow: 0 10px 22px -12px rgba(143, 24, 34, .8); }
+.msheet-item.is-current .mi-no { background: #ffe7a8; border-color: transparent; color: #8f1822; }
+.msheet-item.is-current .mi-txt small { opacity: .8; }
+.msheet-item.is-current .mi-eq { display: flex; }
+.msheet-item.is-failed { opacity: .4; }
+/* Gen Z: tối giản, đen–hồng pastel */
+[data-theme="modern"] .msheet-panel { background: rgba(255, 252, 250, .96); color: #1d1a1b; }
+[data-theme="modern"] .msheet-head { border-bottom: 1px solid rgba(0, 0, 0, .07); }
+[data-theme="modern"] .msheet-badge { border-radius: 50%; background: conic-gradient(from 20deg, #f3a6b8, #f6e1c9, #d9b3b9, #f3a6b8); color: #fff; }
+[data-theme="modern"] .msheet-ttl b { color: #1d1a1b; font-family: var(--f-body, inherit); }
+[data-theme="modern"] .msheet-item:hover, [data-theme="modern"] .msheet-item:focus-visible { background: rgba(243, 166, 184, .14); }
+[data-theme="modern"] .mi-no { border-color: rgba(0, 0, 0, .1); color: #8a7f81; }
+[data-theme="modern"] .msheet-item.is-current { background: #1d1a1b; box-shadow: 0 10px 22px -12px rgba(0, 0, 0, .6); }
+[data-theme="modern"] .msheet-item.is-current .mi-no { background: #f3a6b8; color: #1d1a1b; }
+[data-theme="modern"] .msheet-item.is-current .mi-eq i { background: #f3a6b8; }
+
+/* ---------------------------------------------- phong bì mừng cưới gọn hơn */
+.gifts { gap: 26px; }
+.gift-item { gap: 12px; }
+.envelope { max-width: 360px; padding-top: 8px; }
+.env-back { top: 40px; border-radius: 9px; }
+.env-back::before { height: 34px; }
+.env-letter { gap: 8px; margin: 0 16px; padding: 14px 16px 96px; }
+.env-front { height: 88px; padding-bottom: 6px; border-radius: 0 0 9px 9px; }
+.env-label { font-size: .98rem; }
+[data-theme="classic"] .env-label { font-size: 1.02rem; }
+[data-theme="modern"] .env-label { font-size: 1.05rem; }
+.env-seal { width: 38px; height: 38px; margin-left: -19px; bottom: 34px; font-size: 1.1rem; }
+[data-theme="modern"] .env-seal { font-size: 1rem; }
+.bc-bank { font-size: .9rem; }
+.bc-number { font-size: clamp(1.15rem, calc(4.6 * var(--cw)), 1.45rem); }
+[data-theme="modern"] .bc-number { font-size: clamp(1.4rem, calc(5 * var(--cw)), 1.8rem); }
+.bc-scratch { padding: 6px 10px; }
+.gift-item .btn { padding-block: 9px; }
+/* liên hệ nằm cuối, ngay sau mừng cưới: bớt khoảng trống phía trên */
+#mung-cuoi + #luu-y { padding-top: clamp(56px, calc(9 * var(--cw)), 90px); }
+
+/* mừng cưới: thẻ gọn — nút sao chép nằm trong lá thư, bỏ dòng gợi ý & icon thừa */
+.bc-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.bc-row .bc-bottom { min-width: 0; }
+.bc-row .bc-bottom b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bc-copy {
+  flex: none; display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 999px; border: 1px solid currentColor;
+  background: transparent; color: var(--wine, #b3222f);
+  font: 600 .74rem/1 var(--f-body); cursor: pointer; transition: background .2s, color .2s;
+}
+.bc-copy .ic { width: 14px; height: 14px; }
+.bc-copy:hover { background: rgba(0, 0, 0, .05); }
+[data-theme="classic"] .bc-copy { color: var(--navy); }
+[data-theme="modern"] .bc-copy { color: var(--ink); border-color: rgba(0, 0, 0, .2); letter-spacing: .04em; }
+.gifts { gap: 30px; }
+
+/* mã QR nằm trên phong bì, ngay trên chữ "Mừng cưới …" (thay con dấu) */
+.envelope.has-qr .env-letter { padding-bottom: 196px; }
+.envelope.has-qr .env-front { height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; padding-bottom: 8px; clip-path: polygon(0 0, 50% 34px, 100% 0, 100% 100%, 0 100%); }
+.envelope.has-qr .env-seal { display: none; }
+.env-qr { display: block; width: 124px; padding: 6px; border-radius: 10px; background: #fff; box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .5); }
+.env-qr img { display: block; width: 100%; height: auto; }
+[data-theme="classic"] .env-qr { box-shadow: 0 0 0 3px #e8b72c, 0 6px 16px -8px rgba(0, 0, 0, .5); }
+
+/* mừng cưới: hai phong bì cách xa hơn + nút tải mã QR */
+.gifts { gap: 44px; }
+.qr-dl {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 2px;
+  padding: 8px 16px; border-radius: 999px; border: 1px solid currentColor;
+  font: 600 .82rem/1 var(--f-body); text-decoration: none; color: var(--wine, #b3222f);
+}
+.qr-dl .ic { width: 16px; height: 16px; }
+[data-theme="classic"] .qr-dl { color: var(--navy); background: #fff; }
+[data-theme="modern"] .qr-dl { color: var(--ink); border-color: rgba(0, 0, 0, .2); }
+
+/* liên hệ: hai thẻ chú rể / cô dâu cạnh nhau, gọn */
+#luu-y { padding: clamp(56px, calc(10 * var(--cw)), 90px) 0 clamp(64px, calc(12 * var(--cw)), 110px); }
+#luu-y .head { margin-bottom: 24px; }
+.contact-tiles { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ct-tile {
+  display: grid; justify-items: center; gap: 4px; text-align: center;
+  padding: 18px 12px 16px; border-radius: 18px; background: var(--white, #fff); border: 1px solid var(--line);
+}
+.ct-tile small { font: 600 .66rem/1.2 var(--f-body); letter-spacing: .2em; text-transform: uppercase; color: var(--rose); }
+.ct-tile b { font: 600 1.05rem/1.3 var(--f-body); }
+.ct-actions { display: flex; gap: 6px; margin-top: 10px; }
+.ct-btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 12px; border-radius: 999px;
+  border: 1px solid var(--line); font: 600 .8rem/1 var(--f-body); color: inherit; text-decoration: none;
+}
+.ct-btn .ic { width: 15px; height: 15px; }
+.ct-call { background: var(--wine, #b3222f); border-color: transparent; color: #fff; }
+[data-theme="classic"] .ct-tile { border: 2px solid var(--navy); box-shadow: 4px 4px 0 var(--navy); }
+[data-theme="classic"] .ct-tile small { color: var(--navy); }
+[data-theme="classic"] .ct-tile b { color: var(--red); font-family: var(--f-display); font-size: 1.15rem; }
+[data-theme="classic"] .ct-call { background: var(--red); }
+[data-theme="classic"] .ct-btn:not(.ct-call) { border-color: var(--navy); color: var(--navy); }
+[data-theme="modern"] .ct-call { background: var(--ink); }
+
+/* nút tải QR: nhãn nhỏ gắn ở góc dưới mã QR, nằm trong phong bì */
+.env-qr { position: relative; }
+.env-qr .qr-dl {
+  position: absolute; right: -12px; top: -10px; margin: 0;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 4px 8px 4px 6px; border-radius: 999px; border: 0;
+  background: #fff; color: var(--wine, #b3222f);
+  font: 700 .66rem/1 var(--f-body); letter-spacing: .02em;
+  box-shadow: 0 3px 10px -3px rgba(0, 0, 0, .45);
+}
+.env-qr .qr-dl .ic { width: 12px; height: 12px; }
+[data-theme="classic"] .env-qr .qr-dl { background: var(--yellow, #ffd23f); color: var(--red); }
+[data-theme="modern"] .env-qr .qr-dl { background: var(--ink); color: #fff; }
+
+/* lời kết khi không rõ khách bên nào: mỗi bên một khối, từng dòng lễ/tiệc */
+.cr-side .cr-names { display: grid; gap: 6px; }
+.cr-ev { display: block; font-size: .78em; line-height: 1.35; }
+.cr-ev b { font-weight: 800; }
+
+/* phong bì mừng cưới canh giữa ở cả hai phong cách */
+.gift-item { justify-items: center; }
+
+/* Hai nửa yêu thương: chú rể & cô dâu chung một hàng */
+.cast-grid { grid-template-columns: 1fr 1fr !important; gap: 14px !important; align-items: start; }
+.cast-grid .role { margin: 0 !important; }
+.cast-grid .role-alt { margin-top: 36px !important; } /* lệch nhẹ cho tự nhiên */
+.cast-grid .role-info { padding-top: 12px; margin-top: 12px; text-align: center; }
+.cast-grid .role-as { margin-bottom: 6px; }
+.cast-grid .role-name { margin: 0; font-size: clamp(1.15rem, calc(5 * var(--cw)), 1.6rem) !important; line-height: 1.2; }
+[data-theme="classic"] .cast-grid .role-photo { border-width: 6px; }
+
+[data-theme="classic"] .cast-grid .role-name { font-size: clamp(1.02rem, calc(4.3 * var(--cw)), 1.45rem) !important; }
+
+/* nhịp khoảng cách đều giữa các mục trong khung một cột (trước 100px trên + 100px dưới = quá thưa trên điện thoại) */
+main > section:not(.hero):not(.today):not(#luu-y) { padding-top: 76px; padding-bottom: 76px; }
+main > section:not(.hero) .head { margin-bottom: 36px; }
+
+/* 5 mục trên thanh dưới đáy: chữ nhỏ lại một chút cho vừa */
+.tabbar a { padding-inline: 0; }
+.tabbar a span { font-size: .64rem; white-space: nowrap; }
+
+/* màn mở thiệp tràn 1px mỗi bên để phủ kín mép cột (tránh vạch sáng do lệch nửa pixel) */
+.leader { left: calc(var(--side) - 1px) !important; right: calc(var(--side) - 1px) !important; }

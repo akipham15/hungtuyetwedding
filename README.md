@@ -31,7 +31,7 @@ Bấm đúp **`index.html`** để mở trên trình duyệt — không cần c�
    - Xem trước bằng link có `?ngay=2026-11-16` (ngày cưới) hoặc `?ngay=2026-11-20` (sau cưới).
 6. **Xem được khi mạng yếu**: mở thiệp một lần (qua mạng) là trang tự lưu lại; lần sau mạng chập chờn hoặc mất sóng vẫn xem được thiệp, địa chỉ, số điện thoại (`sw.js`). Có mạng thì luôn lấy bản mới nhất. Nhạc không được lưu.
 7. **Ảnh xem trước khi gửi link** (Zalo, Messenger, Facebook): `assets/og-image.jpg` (1200×630). Thẻ meta trong `index.html` ghi link đầy đủ `https://akipham15.github.io/hungtuyetwedding/` — đổi tên miền thì sửa các dòng `og:url`, `og:image`, `twitter:image`. Zalo/Facebook lưu ảnh xem trước một thời gian; muốn làm mới trên Facebook dùng [Sharing Debugger](https://developers.facebook.com/tools/debug/).
-8. **Nhạc nền không tự phát** (và không tải trước) — khách bấm nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để nghe. Mỗi phong cách một bài; đổi phong cách lúc đang phát thì tự chuyển bài.
+8. **Nhạc nền tự phát khi bấm "Mở thiệp"** — phát lần lượt 5 bài, bài nào phát mới tải bài đó. Bấm nút ☰ trên nút nhạc (cuộn băng ở Gen Y, thanh "Nhạc nền" ở Gen Z) để chọn bài; bấm nút nhạc để tắt/bật. Đổi phong cách lúc đang phát thì nhạc vẫn chạy tiếp.
 
 ## Thêm ảnh
 
@@ -72,9 +72,14 @@ photos: {
 
 Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ, chuyện tình, số tài khoản mừng cưới…) nằm trong **`js/config.js`**.
 
-- **Nhạc nền**: chép file mp3 vào `music/`, rồi sửa `music: { classic: "music/song.mp3", modern: "music/song_new.mp3" }` (Gen Y / Gen Z) và tên bài hiển thị ở `musicTitle`. Nên nén nhạc ~128 kbps (3–4 MB) cho nhẹ.
+- **Nhạc nền**: danh sách phát trong `music` (mỗi bài `{ src, title }`), phát lần lượt, hết thì quay lại bài đầu; dùng chung cho Gen Y & Gen Z. Chép file mp3 vào `music/` **đúng tên** đã khai báo:
+  `1-i-love-you-3000.mp3`, `2-i-love-you-baby.mp3`, `3-to-the-moon.mp3`, `4-sao-cung-duoc.mp3`, `5-ban-doi.mp3`.
+  Bài nào chưa có file thì tự bỏ qua. Nên nén ~128 kbps (3–4 MB/bài) cho nhẹ. Muốn mỗi phong cách một danh sách: `music: { classic: [ … ], modern: [ … ] }`.
 - **Mã QR mừng cưới**: chép ảnh vào `assets/` rồi điền đường dẫn vào `gift.accounts[].qr`.
-- **Lịch trình**: mỗi lễ/tiệc trong `events` gồm `title`, `date`, `time`, `lunar` (ngày âm lịch, tuỳ chọn), `place`, `address`, `map`. Thêm `side: "trai"` hoặc `side: "gai"` nếu chỉ dành cho một bên (bỏ trống = hiện cho khách cả hai bên). Sự kiện có chữ "Tiệc" và hôn lễ (trùng ngày `date`) cũng được nhắc lại ở phần Lời kết.
+- **Lịch trình**: mỗi lễ/tiệc trong `events` gồm `side` (`"trai"` / `"gai"`, bỏ trống = chung hai bên), `title`, `date`, `time`, `lunar` (ngày âm lịch, tuỳ chọn), `place`, `address`, `map`.
+  - Không ghi `map` thì nút **Chỉ đường** tự tìm theo `address` trên Google Maps; ghi `map: ""` để ẩn nút.
+  - **Khách nhà gái** (link có `&ben=gai`) thấy giờ **hôn lễ & tiệc của nhà gái** ở bìa, đếm ngược, ô ngày cưới và Lời kết; nút nhắn Zalo xác nhận tham dự gửi tới **cô dâu**. Khách nhà trai hoặc link không có `ben` thấy theo nhà trai (`date` trong config).
+  - Sự kiện có chữ "Hôn lễ" và "Tiệc" của bên đang xem được nhắc lại ở phần Lời kết.
 - **Lưu ý cho khách** (trang phục, gửi xe, số liên hệ, xác nhận tham dự): sửa trong `guestInfo`.
 - **Phong cách mặc định**: `theme: "classic"` (Gen Y) trong config — link không kèm `giaodien` luôn mở ra Gen Y. Gửi link kèm `&giaodien=genz` để khách mở sẵn Gen Z.
 - **Gửi thiệp có tên khách**: thêm `?ten=Tên khách` vào cuối link, ví dụ
@@ -89,7 +94,7 @@ Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ,
 | Tham số | Tác dụng | Ví dụ |
 |---------|----------|-------|
 | `ten` | Tên khách mời (không có thì xưng "bạn") | `?ten=Anh%20Nam` |
-| `ben` | Khách bên nào: `trai` / `gai` | `&ben=gai` |
+| `ben` | Khách bên nào: `trai` / `gai` — mở sẵn đúng bên, hiện giờ lễ/tiệc của bên đó | `&ben=gai` |
 | `giaodien` | Mở sẵn phong cách: `genz` (không ghi = Gen Y) | `&giaodien=genz` |
 | `ngay` | Giả lập ngày để xem trước chế độ "Hôm nay" / sau cưới (chỉ để kiểm tra, không gửi cho khách) | `?ngay=2026-11-16` |
 | `quanly` | Hiện nút sang trang tạo link (chỉ dùng cho cô dâu chú rể) | `?quanly=1` |

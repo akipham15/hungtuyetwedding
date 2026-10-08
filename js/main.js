@@ -31,10 +31,21 @@
     r.weekday = new Date(Date.UTC(r.y, r.m - 1, r.d)).getUTCDay();
     return r;
   }
-  const W = parseDT(C.date);
+  const params = new URLSearchParams(location.search);
+  // Khách bên nào: ?ben=trai | ?ben=gai (không ghi = chưa rõ, hiển thị theo nhà trai)
+  const BEN = (params.get("ben") || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const SIDE = BEN.includes("trai") ? "trai" : BEN.includes("gai") ? "gai" : "";
+  // Lễ & tiệc của bên đang xem (sự kiện không ghi side là chung cho cả hai bên)
+  const MY_EVENTS = (C.events || []).filter((e) => !e.side || e.side === (SIDE || "trai"));
+  const isCeremony = (e) => /hôn lễ|thành hôn|vu quy/i.test(e.title || "");
+  const isParty = (e) => /tiệc/i.test(e.title || "");
+  // Thời điểm chính: khách nhà gái thấy giờ hôn lễ nhà gái; còn lại theo config.date
+  const W = (() => {
+    const own = SIDE === "gai" && MY_EVENTS.find((e) => e.side === "gai" && isCeremony(e));
+    return own ? parseDT(own.date, own.time) : parseDT(C.date);
+  })();
   const G = (get(C, "groom.name") || "").normalize("NFC");
   const B = (get(C, "bride.name") || "").normalize("NFC");
-  const params = new URLSearchParams(location.search);
   // Tên khách mời: ?ten=Anh%20Nam (hoặc ?to= / ?khach=). Không có thì xưng "bạn".
   const GUEST = (params.get("ten") || params.get("to") || params.get("khach") || "").trim().slice(0, 60);
 
@@ -124,10 +135,28 @@
         </div>`).join("")]);
     }
     const r = g.rsvp || {};
-    const rsvpHref = r.url || (contacts[0] ? `https://zalo.me/${phone(contacts[0].phone)}` : "");
+    if (g.rsvp) {
+    // khách nhà gái nhắn cô dâu, còn lại nhắn người liên hệ đầu tiên (chú rể)
+    const rsvpTo = (SIDE === "gai" && contacts.find((c) => /cô dâu/i.test(c.role || ""))) || contacts[0];
+    const rsvpHref = r.url || (rsvpTo ? `https://zalo.me/${phone(rsvpTo.phone)}` : "");
     if (r.text || rsvpHref) {
       cards.push(["i-check", "Xác nhận tham dự", `<p>${esc(r.text || "")}</p>${rsvpHref
         ? `<a class="btn btn-fill" href="${esc(rsvpHref)}" target="_blank" rel="noopener">${icon("i-check", "ic")} ${r.url ? "Xác nhận ngay" : "Nhắn qua Zalo"}</a>` : ""}`]);
+    }
+    }
+    // chỉ còn mục liên hệ: hiện gọn thành hai thẻ chú rể / cô dâu cạnh nhau
+    if (cards.length === 1 && cards[0][1] === "Liên hệ") {
+      $("#note-grid").className = "contact-tiles";
+      $("#note-grid").innerHTML = contacts.map((c) => `
+        <article class="ct-tile" data-reveal>
+          <small>${esc(c.role)}</small>
+          <b>${esc(c.name)}</b>
+          <div class="ct-actions">
+            <a class="ct-btn ct-call" href="tel:${esc(phone(c.phone))}" aria-label="Gọi ${esc(c.name)}">${icon("i-phone", "ic")}<span>Gọi</span></a>
+            <a class="ct-btn" href="https://zalo.me/${esc(phone(c.phone))}" target="_blank" rel="noopener" aria-label="Nhắn Zalo cho ${esc(c.name)}">${icon("i-chat", "ic")}<span>Zalo</span></a>
+          </div>
+        </article>`).join("");
+      return;
     }
     if (!cards.length) {
       $("#luu-y").hidden = true;
@@ -182,17 +211,20 @@
       dates: `${fmt(start)}/${fmt(end)}`,
       ctz: "Asia/Ho_Chi_Minh",
       location: [ev.place, ev.address].filter(Boolean).join(", "),
-      details: `Trân trọng kính mời bạn đến dự ${ev.title} của ${G} & ${B}.`,
+      details: `Trân trọng kính mời bạn đến dự ${ev.title} của ${G} & ${B}.${ev.map ? `\nChỉ đường: ${ev.map}` : ""}`,
     });
     return `https://calendar.google.com/calendar/render?${q}`;
   }
+
+  /** Link chỉ đường: dùng map trong config; không ghi map thì tự tìm theo địa chỉ trên Google Maps; map: "" để ẩn */
+  const mapLink = (e) => (e.map !== undefined ? e.map
+    : e.address ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.address)}` : "");
 
   /** Lịch trình chia hai bên: mỗi bên có bố mẹ, địa chỉ tư gia và các lễ/tiệc của bên đó */
   function renderShows() {
     const list = C.events || [];
     if (!list.length) return ($("#lich-chieu").hidden = true);
-    const ben = (params.get("ben") || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const mine = ben.includes("trai") ? "trai" : ben.includes("gai") ? "gai" : "";
+    const mine = SIDE;
     const sides = [
       { key: "trai", label: "Nhà trai", p: C.groom || {} },
       { key: "gai", label: "Nhà gái", p: C.bride || {} },
@@ -213,7 +245,7 @@
           ${e.lunar ? `<p class="show-lunar">${esc(e.lunar)}</p>` : ""}
           <p class="show-meta"><b>${esc(e.place)}</b>${e.address ? `<br>${esc(e.address)}` : ""}</p>
           <div class="show-actions">
-            ${e.map ? `<a class="btn btn-sm btn-fill" href="${esc(e.map)}" target="_blank" rel="noopener">${icon("i-pin", "ic")} Chỉ đường</a>` : ""}
+            ${mapLink(e) ? `<a class="btn btn-sm btn-fill" href="${esc(mapLink(e))}" target="_blank" rel="noopener">${icon("i-pin", "ic")} Chỉ đường</a>` : ""}
             ${dt ? `<a class="btn btn-sm" href="${esc(gcalLink(e, dt))}" target="_blank" rel="noopener">${icon("i-cal", "ic")} Lưu vào lịch</a>` : ""}
           </div>
         </div>
@@ -231,7 +263,9 @@
             ${sd.key === mine ? `<span class="side-badge">${icon("i-check", "ic")} Bạn được mời bên này</span>` : ""}
             <p class="side-label">${sd.label}</p>
             <p class="side-parents">Ông <b>${esc(sd.p.father)}</b><br>Bà <b>${esc(sd.p.mother)}</b></p>
-            ${sd.p.address ? `<p class="side-addr">${icon("i-pin", "ic")} Tư gia: ${esc(sd.p.address)}</p>` : ""}
+            ${sd.p.address ? (sd.p.map
+              ? `<a class="side-addr" href="${esc(sd.p.map)}" target="_blank" rel="noopener">${icon("i-pin", "ic")} Tư gia: ${esc(sd.p.address)}</a>`
+              : `<p class="side-addr">${icon("i-pin", "ic")} Tư gia: ${esc(sd.p.address)}</p>`) : ""}
           </header>
           <ol class="show-list">${eventsOf(sd.key).map(row).join("") || `<li class="show-empty">Chưa có thông tin</li>`}</ol>
         </article>`).join("")}`;
@@ -250,22 +284,21 @@
     const g = C.gift || {};
     const list = g.accounts || [];
     if (!g.show || !list.length) return ($("#mung-cuoi").hidden = true);
-    const group = (n) => String(n).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ");
     $("#gifts").innerHTML = list.map((a) => `
       <article class="gift-item" data-reveal>
-        <div class="envelope">
+        <div class="envelope${a.qr ? " has-qr" : ""}">
           <div class="env-back"></div>
           <div class="env-letter">
-            <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span>${icon("i-heart")}</div>
-            <div class="bc-scratch"><div class="bc-number">${esc(group(a.number))}</div><canvas class="sc-cover" aria-hidden="true"></canvas></div>
-            <div class="bc-bottom"><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></div>
+            <div class="bc-top"><span class="bc-bank">${esc(a.bank)}</span></div>
+            <div class="bc-scratch"><div class="bc-number">${esc(String(a.number).replace(/\s+/g, ""))}</div><canvas class="sc-cover" aria-hidden="true"></canvas></div>
+            <div class="bc-row">
+              <div class="bc-bottom"><small>Chủ tài khoản</small><b>${esc(a.owner)}</b></div>
+              <button class="bc-copy" type="button" data-copy="${esc(String(a.number).replace(/\s+/g, ""))}" aria-label="Sao chép số tài khoản">${icon("i-copy", "ic")}<span>Sao chép</span></button>
+            </div>
           </div>
-          <div class="env-front"><span class="env-label">${esc(a.label)}</span></div>
+          <div class="env-front">${a.qr ? `<span class="env-qr"><img src="${esc(a.qr)}" alt="Mã QR ${esc(a.bank)}" loading="lazy" onerror="this.closest('.envelope').classList.remove('has-qr');this.parentNode.remove()"><a class="qr-dl" aria-label="Tải mã QR" title="Tải mã QR" href="${esc(a.qr)}" download="ma-qr-${esc(String(a.label || a.bank).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/đ/gi, "d").toLowerCase().replace(/\s+/g, "-"))}.png">${icon("i-download", "ic")}<span>Tải</span></a></span>` : ""}<span class="env-label">${esc(a.label)}</span></div>
           <span class="env-seal" aria-hidden="true"><span class="only-y">囍</span><span class="only-z">♡</span></span>
         </div>
-        <p class="sc-hint"><span class="only-y">Cào dải bạc để xem số tài khoản 🪙</span><span class="only-z">cào nhẹ để lộ số tài khoản ✨</span></p>
-        ${a.qr ? `<div class="gift-qr"><img src="${esc(a.qr)}" alt="Mã QR ${esc(a.bank)}" loading="lazy" onerror="this.parentNode.remove()"></div>` : ""}
-        <button class="btn" type="button" data-copy="${esc(String(a.number).replace(/\s+/g, ""))}">${icon("i-copy", "ic")} Sao chép số tài khoản</button>
       </article>`).join("");
 
     $("#gifts").addEventListener("click", async (e) => {
@@ -299,23 +332,36 @@
   /* ---------------------------------------------------------------- lời kết */
   function renderCredits() {
     const gr = C.groom || {}, br = C.bride || {};
-    // sự kiện trùng ngày giờ chính = hôn lễ; sự kiện có chữ "tiệc" = tiệc chung vui
-    const evs = (C.events || []).map((e) => ({ e, dt: parseDT(e.date, e.time) }));
-    const ceremony = W && evs.find(({ dt }) => dt && dt.y === W.y && dt.m === W.m && dt.d === W.d)?.e;
-    const partyEv = evs.find(({ e }) => /tiệc/i.test(e.title || ""));
+    // hôn lễ & tiệc của bên đang xem (khách nhà gái thấy lễ/tiệc nhà gái, còn lại theo nhà trai)
+    const evs = MY_EVENTS.map((e) => ({ e, dt: parseDT(e.date, e.time) }));
+    const ceremony = evs.find(({ e }) => isCeremony(e))?.e;
+    const partyEv = evs.find(({ e }) => isParty(e));
     const party = partyEv?.e;
     const partyWhen = () => {
       const { e, dt } = partyEv;
       const when = dt ? `${pad(dt.h)}:${pad(dt.mi)} · ${WEEKDAYS[dt.weekday]}, ${pad(dt.d)}.${pad(dt.m)}.${dt.y}` : "";
-      return `${when}${e.lunar ? `<small>${esc(e.lunar)}</small>` : ""}${e.address ? `<small>${esc(e.address)}</small>` : ""}`;
+      const addr = e.address ? `<small>Địa chỉ: ${esc(e.address)}</small>` : "";
+      return `${when}${e.lunar ? `<small>${esc(e.lunar)}</small>` : ""}${addr}`;
     };
     const parents = (p) => `Ông ${esc(p.father)}<br>Bà ${esc(p.mother)}`;
+    /** Không rõ khách bên nào: mỗi bên một khối — lễ/tiệc theo thứ tự ngày, cuối khối là địa chỉ tư gia */
+    const bothSides = () => [["trai", "Nhà trai", gr], ["gai", "Nhà gái", br]].map(([key, label, p]) => {
+      const list = (C.events || []).filter((e) => e.side === key)
+        .map((e) => ({ e, dt: parseDT(e.date, e.time) })).filter((x) => x.dt)
+        .sort((a, b) => (a.e.date + a.e.time).localeCompare(b.e.date + b.e.time));
+      if (!list.length) return null;
+      const rows = list.map(({ e, dt }) =>
+        `<span class="cr-ev"><b>${esc(e.title)}</b> · ${pad(dt.h)}:${pad(dt.mi)} · ${WEEKDAYS[dt.weekday]}, ${pad(dt.d)}.${pad(dt.m)}.${dt.y}</span>`).join("");
+      const addr = p.address || list[0].e.address;
+      return [`Tại tư gia ${label.toLowerCase()}`, `${rows}${addr ? `<small>Địa chỉ: ${esc(addr)}</small>` : ""}`, "cr-side"];
+    }).filter(Boolean);
     const blocks = [
-      ["Nhà trai", parents(gr)],
-      ["Nhà gái", parents(br)],
       ["Trân trọng báo tin lễ thành hôn của con chúng tôi", `${esc(gr.fullName || G)}<br>&amp;<br>${esc(br.fullName || B)}`],
-      W ? [`Hôn lễ được cử hành${ceremony?.place ? ` tại ${esc(ceremony.place.toLowerCase())}` : ""} vào lúc`, `${pad(W.h)}:${pad(W.mi)} · ${WEEKDAYS[W.weekday]}, ${pad(W.d)}.${pad(W.m)}.${W.y}<small>${esc(C.lunarDate || "")}</small>`] : null,
-      party ? ["Vui lòng đến dự buổi tiệc chung vui cùng gia đình chúng tôi", partyWhen()] : null,
+      // link có ben=trai/gai: chỉ lễ & tiệc của bên đó; không ghi bên nào: hiện rõ cả hai bên kèm địa chỉ
+      ...(SIDE ? [
+        party ? [`Vui lòng đến dự buổi tiệc chung vui cùng gia đình chúng tôi${party.place ? ` tại ${esc(party.place.toLowerCase())}` : ""}`, partyWhen()] : null,
+        W ? [`Hôn lễ được cử hành${ceremony?.place ? ` tại ${esc(ceremony.place.toLowerCase())}` : ""} vào lúc`, `${pad(W.h)}:${pad(W.mi)} · ${WEEKDAYS[W.weekday]}, ${pad(W.d)}.${pad(W.m)}.${W.y}<small>${esc(C.lunarDate || "")}</small>${ceremony?.address && ceremony.address !== party?.address ? `<small>Địa chỉ: ${esc(ceremony.address)}</small>` : ""}`] : null,
+      ] : bothSides()),
       [PHASE === "after" ? "Cảm ơn sự hiện diện của" : "Trân trọng kính mời", esc(GUEST || "Bạn cùng gia đình"), "cr-guest"],
     ].filter(Boolean);
     $("#credits-roll").innerHTML = blocks.map(([role, names, cls]) => `
@@ -388,17 +434,48 @@
   /** Lấy giá trị theo phong cách đang chọn: chấp nhận chuỗi (dùng chung) hoặc { classic, modern } */
   const byTheme = (v) => (typeof v === "string" ? v : (v && (v[document.documentElement.dataset.theme] || v.classic)) || "");
 
+  /** Danh sách bài của phong cách đang xem. config.music có thể là:
+   *  - mảng [{ src, title }, …] dùng chung hai phong cách (phát lần lượt, hết thì quay lại bài đầu)
+   *  - { classic: …, modern: … } mỗi phong cách một chuỗi / một mảng
+   *  - một chuỗi đường dẫn mp3 (tên bài lấy ở musicTitle) */
+  function playlist() {
+    const m = C.music;
+    const v = m && !Array.isArray(m) && typeof m === "object" ? m[document.documentElement.dataset.theme] || m.classic : m;
+    const list = (Array.isArray(v) ? v : v ? [v] : [])
+      .map((t) => (typeof t === "string" ? { src: t, title: "" } : { ...t }))
+      .filter((t) => t && t.src);
+    if (list.length === 1 && !list[0].title) list[0].title = byTheme(C.musicTitle) || "";
+    return list;
+  }
+
+  let tracks = [], trackIdx = 0, wantPlay = false;
+  const failed = new Set();
   function setupMusic() {
     if (!C.music) return;
     audio.preload = "none"; // không tải nhạc cho tới khi khách bấm nghe (đỡ tốn dung lượng 3G/4G)
     audio.volume = 0.6;
     const state = $(".tape-state", musicBtn);
-    audio.addEventListener("error", () => (musicBtn.hidden = true));
     const npState = $(".np-state", musicBtn);
-    audio.addEventListener("play", () => { musicBtn.classList.add("is-playing"); state.textContent = "Đang phát · bấm để tắt"; npState.textContent = "Đang phát"; });
+    audio.addEventListener("play", () => {
+      musicBtn.classList.add("is-playing");
+      state.textContent = "Đang phát · bấm để tắt";
+      npState.textContent = tracks.length > 1 ? `Đang phát · ${trackIdx + 1}/${tracks.length}` : "Đang phát";
+    });
     audio.addEventListener("pause", () => { musicBtn.classList.remove("is-playing"); state.textContent = "Bấm để phát"; npState.textContent = "Nhạc nền"; });
-    musicBtn.addEventListener("click", () => (audio.paused ? playMusic() : audio.pause()));
-    // đổi phong cách -> đổi bài (nếu đang phát thì phát tiếp bài mới)
+    // hết bài -> sang bài tiếp theo (hết danh sách thì quay lại bài đầu)
+    audio.addEventListener("ended", () => loadTrack(trackIdx + 1, true));
+    // file lỗi / chưa có -> bỏ qua sang bài kế; tất cả đều lỗi thì ẩn nút nhạc
+    audio.addEventListener("error", () => {
+      failed.add(tracks[trackIdx]?.src);
+      if (tracks.every((t) => failed.has(t.src))) return (musicBtn.hidden = true);
+      if (wantPlay) loadTrack(trackIdx + 1, true);
+    });
+    musicBtn.addEventListener("click", (e) => {
+      if (e.target.closest("#music-list-btn")) return; // nút ☰ mở danh sách, không bật/tắt nhạc
+      audio.paused ? playMusic() : (wantPlay = false, audio.pause());
+    });
+    setupTrackPicker();
+    // đổi phong cách: nếu danh sách khác thì đổi (đang phát thì phát tiếp), cùng danh sách thì nghe tiếp
     document.addEventListener("themechange", applyTrack);
     applyTrack();
   }
@@ -429,7 +506,7 @@
     };
     const stop = () => { cancelAnimationFrame(raf); raf = 0; document.documentElement.classList.remove("is-beat"); };
     // tạo bộ phân tích ngay trong lúc khách bấm nút nhạc (trình duyệt chỉ cho bật âm thanh khi có thao tác)
-    musicBtn.addEventListener("click", () => {
+    const initCtx = () => {
       if (ctx) return ctx.resume?.();
       try {
         ctx = new AC();
@@ -440,7 +517,8 @@
         analyser.connect(ctx.destination);
         data = new Uint8Array(analyser.frequencyBinCount);
       } catch { ctx = null; }
-    });
+    };
+    [musicBtn, $("#play-btn"), $("[data-open-invite]"), $("#music-sheet")].forEach((el) => el?.addEventListener("click", initCtx));
     audio.addEventListener("play", () => {
       if (!ctx) return;
       ctx.resume?.();
@@ -450,21 +528,76 @@
     audio.addEventListener("pause", stop);
     document.addEventListener("visibilitychange", () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; } else if (!audio.paused && ctx) loop(); });
   }
+  /** Bảng chọn bài: bấm ☰ trên nút nhạc → danh sách bài, chọn bài nào phát bài đó (chỉ tải bài được chọn). */
+  const sheet = $("#music-sheet"), sheetList = $("#music-list");
+  function renderTrackList() {
+    sheetList.replaceChildren(...tracks.map((t, i) => {
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "msheet-item" + (i === trackIdx ? " is-current" : "") + (failed.has(t.src) ? " is-failed" : "");
+      b.dataset.track = i;
+      // "Tên bài · Ca sĩ" -> hai dòng
+      const [name, ...by] = (t.title || `Bài ${i + 1}`).split(" · ");
+      b.innerHTML = `<span class="mi-no">${String(i + 1).padStart(2, "0")}</span>`
+        + `<span class="mi-txt"><b>${esc(name)}</b>${by.length ? `<small>${esc(by.join(" · "))}</small>` : ""}</span>`
+        + `<span class="mi-eq" aria-hidden="true"><i></i><i></i><i></i></span>`;
+      if (i === trackIdx) b.setAttribute("aria-current", "true");
+      li.append(b);
+      return li;
+    }));
+  }
+  function setupTrackPicker() {
+    const listBtn = $("#music-list-btn");
+    let lastFocus = null;
+    const close = () => { sheet.hidden = true; lastFocus?.focus?.(); };
+    const openSheet = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (!tracks.length) return;
+      lastFocus = document.activeElement;
+      renderTrackList();
+      sheet.classList.toggle("is-playing", !audio.paused);
+      sheet.hidden = false;
+      $(".msheet-item.is-current", sheet)?.focus();
+    };
+    listBtn.addEventListener("click", openSheet);
+    listBtn.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") openSheet(e); });
+    sheet.addEventListener("click", (e) => {
+      const item = e.target.closest("[data-track]");
+      if (item) { failed.delete(tracks[+item.dataset.track]?.src); loadTrack(+item.dataset.track, true); return close(); }
+      if (e.target === sheet || e.target.closest("[data-msheet-close]")) close();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !sheet.hidden) close(); });
+  }
   function applyTrack() {
-    const src = byTheme(C.music);
-    const title = byTheme(C.musicTitle) || "Nhạc nền";
+    const list = playlist();
+    if (!list.length) return (musicBtn.hidden = true);
+    const key = list.map((t) => t.src).join("|");
+    if (key === audio.dataset.list) return;
+    audio.dataset.list = key;
+    tracks = list;
+    failed.clear();
+    audio.loop = tracks.length === 1; // một bài thì lặp lại bài đó
+    musicBtn.hidden = false;
+    $("#music-list-btn").hidden = tracks.length < 2; // chỉ hiện ☰ khi có từ 2 bài trở lên
+    loadTrack(0, !audio.paused);
+  }
+  function loadTrack(i, autoplay) {
+    // bỏ qua các bài đã biết là lỗi
+    for (let k = 0; k < tracks.length && failed.has(tracks[((i % tracks.length) + tracks.length) % tracks.length].src); k++) i++;
+    trackIdx = ((i % tracks.length) + tracks.length) % tracks.length;
+    const t = tracks[trackIdx];
+    const title = t.title || "Nhạc nền";
     $("#tape-title").textContent = title;
     $$("[data-np-title]").forEach((el) => (el.textContent = title));
-    if (!src) return (musicBtn.hidden = true);
-    if (audio.dataset.src === src) return;
-    const wasPlaying = !audio.paused;
-    audio.dataset.src = src;
-    audio.src = src;
-    musicBtn.hidden = false;
-    if (wasPlaying) audio.play().catch(() => {});
+    audio.src = t.src; // preload="none": chỉ tải khi phát
+    if (!sheet.hidden) renderTrackList();
+    if (autoplay) { wantPlay = true; audio.play().catch(() => {}); }
   }
   function playMusic() {
-    if (!musicBtn.hidden && audio.src) audio.play().catch(() => {});
+    if (musicBtn.hidden || !tracks.length) return;
+    wantPlay = true;
+    audio.play().catch(() => {});
   }
 
   /* ------------------------------------------------------------ màn mở thiệp */
@@ -498,7 +631,7 @@
       opened = true;
       clearTimers();
       goFullscreen(); // phải gọi ngay trong lúc bấm thì trình duyệt mới cho phép
-      // mặc định không tự phát nhạc — khách tự bấm nút nhạc nếu muốn nghe
+      playMusic(); // bấm "Mở thiệp" là phát nhạc luôn (trình duyệt chỉ cho phát khi khách đã bấm)
       window.scrollTo(0, 0);
       $(".cassette-lg", leader)?.classList.add("is-playing");
       leader.classList.remove("is-closing");
@@ -555,9 +688,32 @@
       const target = document.querySelector(a.getAttribute("href"));
       if (!target) return;
       e.preventDefault();
-      const offset = ($(".topbar")?.offsetHeight || 0) - 1;
-      window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - offset, behavior: reduceMotion ? "auto" : "smooth" });
+      scrollToSection(target);
     });
+    /** Cuộn tới một mục và bám theo nó: ảnh (lazyload) phía trên tải xong làm trang dài thêm, mục đích bị
+     *  đẩy xuống -> tự cuộn tiếp tới đúng chỗ, không phải bấm lần hai. Khách tự cuộn/chạm thì dừng bám. */
+    let follow = 0;
+    function scrollToSection(target) {
+      clearInterval(follow);
+      const offset = ($(".topbar")?.offsetHeight || 0) - 1;
+      const dest = () => Math.min(target.getBoundingClientRect().top + window.scrollY - offset,
+        document.documentElement.scrollHeight - window.innerHeight);
+      const behavior = reduceMotion ? "auto" : "smooth";
+      let goal = dest(), t0 = performance.now(), still = 0, lastY = -1;
+      window.scrollTo({ top: goal, behavior });
+      const stop = () => { clearInterval(follow); ["wheel", "touchstart", "keydown"].forEach((ev) => window.removeEventListener(ev, stop)); };
+      ["wheel", "touchstart", "keydown"].forEach((ev) => window.addEventListener(ev, stop, { passive: true }));
+      const tick = () => {
+        const now = dest();
+        const stalled = window.scrollY === lastY && Math.abs(window.scrollY - now) > 2; // cuộn mượt bị ngắt giữa chừng
+        if (Math.abs(now - goal) > 2 || stalled) { goal = now; window.scrollTo({ top: goal, behavior }); still = 0; }
+        // dừng khi đã tới nơi và đứng yên một lúc, hoặc quá 4 giây
+        still = Math.abs(window.scrollY - goal) < 3 && window.scrollY === lastY ? still + 1 : 0;
+        lastY = window.scrollY;
+        if (still > 6 || performance.now() - t0 > 8000) stop();
+      };
+      follow = setInterval(tick, 120); // setInterval: vẫn chạy khi trình duyệt hoãn requestAnimationFrame
+    }
     const bar = $("#progress-bar"), top = $("#to-top"), tabbar = $("#tabbar");
     const links = $$("[data-nav]");
     const onScroll = () => {
@@ -1267,7 +1423,8 @@
       if (sw && sh) {
         const k = Math.max(b.w / sw, b.h / sh), dw = sw * k, dh = sh * k;
         if (flip) { c.translate(b.x * 2 + b.w, 0); c.scale(-1, 1); }
-        c.drawImage(source, b.x + (b.w - dw) / 2, b.y + (b.h - dh) / 2, dw, dh);
+        // ảnh dọc bị cắt bớt chiều cao: giữ phần trên (đầu, mặt) thay vì cắt đều hai đầu
+        c.drawImage(source, b.x + (b.w - dw) / 2, b.y + (b.h - dh) * 0.15, dw, dh);
         c.setTransform(scale, 0, 0, scale, 0, 0);
         // Gen Y: màu phim ấm, hơi phai
         if (!z) { c.fillStyle = "rgba(255,160,80,.16)"; c.globalCompositeOperation = "soft-light"; c.fillRect(b.x, b.y, b.w, b.h); c.globalCompositeOperation = "source-over"; c.fillStyle = "rgba(255,244,225,.07)"; c.fillRect(b.x, b.y, b.w, b.h); }

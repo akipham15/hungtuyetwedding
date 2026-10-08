@@ -203,6 +203,7 @@
     <a href="#lich-chieu" data-nav><svg><use href="#i-pin"/></svg><span>Lịch trình</span></a>
     <a href="#album" data-nav><svg><use href="#i-image"/></svg><span>Album</span></a>
     <a href="#mung-cuoi" data-nav><svg><use href="#i-gift"/></svg><span>Mừng cưới</span></a>
+    <a href="#luu-y" data-nav><svg><use href="#i-phone"/></svg><span>Liên hệ</span></a>
   </nav>
 
   <main>
@@ -312,14 +313,6 @@
       <div class="sides" id="sides" data-reveal></div>
     </section>
 
-    <!-- ============ 6b. LƯU Ý CHO KHÁCH ============ -->
-    <section class="notes" id="luu-y">
-      <header class="head" data-reveal>
-        <p class="eyebrow">Dành cho khách mời</p>
-        <h2 class="h2">Một vài <i>lưu ý nhỏ</i></h2>
-      </header>
-      <div class="note-grid" id="note-grid"></div>
-    </section>
 
     <!-- ============ 7. ALBUM ============ -->
     <section class="album" id="album">
@@ -377,6 +370,15 @@
       </header>
       <div class="gifts" id="gifts"></div>
     </section>
+
+    <!-- ============ 8b. LIÊN HỆ (lưu ý cho khách) ============ -->
+    <section class="notes" id="luu-y">
+      <header class="head" data-reveal>
+        <p class="eyebrow">Dành cho khách mời</p>
+        <h2 class="h2">Cần gì cứ <i>gọi nhé</i></h2>
+      </header>
+      <div class="note-grid" id="note-grid"></div>
+    </section>
   </main>
 
   <!-- ============ 9. LỜI KẾT ============ -->
@@ -393,6 +395,7 @@
 
   <!-- Nút nhạc: cuộn băng cassette nhỏ -->
   <button class="tape-btn" id="music-btn" type="button" aria-label="Bật/tắt nhạc" hidden>
+    <span class="tape-list" id="music-list-btn" role="button" tabindex="0" aria-label="Chọn bài hát" aria-haspopup="dialog">☰</span>
     <svg class="tape-ic"><use href="#i-music"/></svg>
     <span class="np" aria-hidden="true">
       <span class="np-art"><svg><use href="#i-heart"/></svg></span>
@@ -411,6 +414,17 @@
   </button>
   <div class="fab">
     <button class="fab-btn" id="to-top" type="button" aria-label="Lên đầu trang"><svg><use href="#i-up"/></svg></button>
+  </div>
+  <div class="msheet" id="music-sheet" role="dialog" aria-modal="true" aria-label="Chọn bài hát" hidden>
+    <div class="msheet-panel">
+      <span class="msheet-grip" aria-hidden="true"></span>
+      <div class="msheet-head">
+        <span class="msheet-badge" aria-hidden="true"><svg><use href="#i-music"/></svg></span>
+        <span class="msheet-ttl"><small>Nhạc nền đám cưới</small><b>Chọn bài hát</b></span>
+        <button type="button" class="msheet-x" data-msheet-close aria-label="Đóng">✕</button>
+      </div>
+      <ol class="msheet-list" id="music-list"></ol>
+    </div>
   </div>
   <audio id="bg-music" loop preload="none"></audio>
 
