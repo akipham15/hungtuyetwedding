@@ -17,7 +17,7 @@ Bấm đúp **`index.html`** để mở trên trình duyệt — không cần c�
 2. **Trong thiệp**: mở đầu (tên + ngày) → Lời ngỏ → Cô dâu & Chú rể → Ngày cưới & đếm ngược → Lịch trình **Nhà trai / Nhà gái** → Lưu ý cho khách → Album → Mừng cưới → Lời kết.
    - Bấm mục trên menu (máy tính) hoặc thanh điều hướng dưới đáy (điện thoại) → **cuộn mượt** tới đúng phần.
    - Bấm logo **✉ H & T** ở góc trái trên cùng → **đóng thiệp** (hiệu ứng ngược) và quay về màn mở thiệp.
-   - Đổi Gen Y ↔ Gen Z bất cứ lúc nào bằng nút trên thanh trên cùng; link trên thanh địa chỉ tự cập nhật theo (`&giaodien=genz`), nên đang xem bản nào thì copy link gửi đi là đúng bản đó.
+   - Không có nút đổi Gen Y ↔ Gen Z trên thiệp: phong cách theo link (`&giaodien=genz` / `&giaodien=geny`), không ghi thì dùng `theme` trong `js/config.js`.
 3. **Hiệu ứng riêng mỗi phong cách**
    - Gen Y: **xác pháo đỏ** bay khắp màn hình khi hai cánh thiệp mở và khi cuộn tới lời kết; **dây đèn nháy** nhiều màu như rạp cưới ở phần mở đầu và lời kết; đếm ngược **lật số như đồng hồ lật**.
    - Gen Z: emoji bung ra khi mở khoá; **chạm 2 lần vào màn hình để thả tim** (như Instagram); hai **dải chữ chạy** bắt chéo; lời ngỏ hiện như **tin nhắn** ("đang nhập…" rồi bong bóng chat); chữ nhấn đổi màu hologram; **thẻ mừng cưới hologram** (máy tính: nghiêng theo chuột); mưa emoji ở lời kết; máy tính có vệt lấp lánh theo con trỏ.
@@ -81,7 +81,7 @@ Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ,
   - **Khách nhà gái** (link có `&ben=gai`) thấy giờ **hôn lễ & tiệc của nhà gái** ở bìa, đếm ngược, ô ngày cưới và Lời kết; nút nhắn Zalo xác nhận tham dự gửi tới **cô dâu**. Khách nhà trai hoặc link không có `ben` thấy theo nhà trai (`date` trong config).
   - Sự kiện có chữ "Hôn lễ" và "Tiệc" của bên đang xem được nhắc lại ở phần Lời kết.
 - **Lưu ý cho khách** (trang phục, gửi xe, số liên hệ, xác nhận tham dự): sửa trong `guestInfo`.
-- **Phong cách mặc định**: `theme: "classic"` (Gen Y) trong config — link không kèm `giaodien` luôn mở ra Gen Y. Gửi link kèm `&giaodien=genz` để khách mở sẵn Gen Z.
+- **Phong cách mặc định**: `theme: "modern"` (Gen Z) trong config — link không kèm `giaodien` luôn mở ra Gen Z. Gửi link kèm `&giaodien=geny` để khách mở sẵn Gen Y.
 - **Gửi thiệp có tên khách**: thêm `?ten=Tên khách` vào cuối link, ví dụ
   `https://ten-mien-cua-ban/?ten=Anh%20Nam` → màn mở thiệp hiện "Trân trọng kính mời **Anh Nam**" (tên cũng xuất hiện ở lời kết).
   Không có `ten` thì thiệp xưng "bạn". Thêm `&ben=trai` hoặc `&ben=gai` để mở sẵn đúng bên và đánh dấu "Bạn được mời bên này".
@@ -95,7 +95,7 @@ Mọi nội dung (tên, cha mẹ, ngày giờ, địa điểm, link bản đồ,
 |---------|----------|-------|
 | `ten` | Tên khách mời (không có thì xưng "bạn") | `?ten=Anh%20Nam` |
 | `ben` | Khách bên nào: `trai` / `gai` — mở sẵn đúng bên, hiện giờ lễ/tiệc của bên đó | `&ben=gai` |
-| `giaodien` | Mở sẵn phong cách: `genz` (không ghi = Gen Y) | `&giaodien=genz` |
+| `giaodien` | Mở sẵn phong cách: `geny` (không ghi = Gen Z) | `&giaodien=geny` |
 | `ngay` | Giả lập ngày để xem trước chế độ "Hôm nay" / sau cưới (chỉ để kiểm tra, không gửi cho khách) | `?ngay=2026-11-16` |
 | `quanly` | Hiện nút sang trang tạo link (chỉ dùng cho cô dâu chú rể) | `?quanly=1` |
 

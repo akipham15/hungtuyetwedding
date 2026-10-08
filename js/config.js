@@ -17,7 +17,7 @@ window.WEDDING = {
     father: "Nguyễn Văn Dũng",
     mother: "Trịnh Thị Thủy",
     address: "Số nhà 9 ngõ 255 đường Vĩnh Khang, Đội 4, Ngọc Hồi, Hà Nội",
-    map: "https://maps.app.goo.gl/emVz5PXuHxVHvVgp6", // vị trí chấm tay trên Google Maps (địa chỉ chưa tìm được)
+    map: "https://www.google.com/maps/search/?api=1&query=20.92542266845703,105.83877563476562", // vị trí chấm tay trên Google Maps (địa chỉ chưa tìm được)
   },
 
   // Thời điểm hôn lễ mặc định (đếm ngược, ngày trên bìa). Định dạng: YYYY-MM-DDTHH:mm (giờ Việt Nam)
@@ -62,7 +62,7 @@ window.WEDDING = {
       lunar: "Tức ngày 7 tháng 10 năm Bính Ngọ",
       place: "Tư gia nhà gái",
       address: "Số nhà 9 ngõ 255 đường Vĩnh Khang, Đội 4, Ngọc Hồi, Hà Nội",
-      map: "https://maps.app.goo.gl/emVz5PXuHxVHvVgp6",
+      map: "https://www.google.com/maps/search/?api=1&query=20.92542266845703,105.83877563476562",
     },
     {
       side: "gai",
@@ -72,7 +72,7 @@ window.WEDDING = {
       lunar: "Nhằm ngày 8 tháng 10 năm Bính Ngọ",
       place: "Tư gia nhà gái",
       address: "Số nhà 9 ngõ 255 đường Vĩnh Khang, Đội 4, Ngọc Hồi, Hà Nội",
-      map: "https://maps.app.goo.gl/emVz5PXuHxVHvVgp6",
+      map: "https://www.google.com/maps/search/?api=1&query=20.92542266845703,105.83877563476562",
     },
   ],
 
@@ -143,7 +143,7 @@ window.WEDDING = {
 
   // Phong cách mặc định: "classic" (Gen Y — đám cưới Việt thập niên 80–90) hoặc "modern" (Gen Z — tối giản fine-art).
   // Khách vẫn đổi được bằng nút "Gen Y | Gen Z"; có thể gửi link kèm &giaodien=geny hoặc &giaodien=genz.
-  theme: "classic",
+  theme: "modern",
 
   // Số ảnh hiển thị ban đầu trong album (bấm "Xem thêm" để hiện tiếp)
   galleryPageSize: 12,
