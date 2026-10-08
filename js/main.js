@@ -943,7 +943,7 @@
       scrollTrigger: { trigger: img.closest("section, footer"), start: "top bottom", end: "bottom top", scrub: true },
     }));
 
-    // Cô dâu & chú rể: ảnh chuyển từ đen trắng sang màu khi cuộn tới
+    // Cô dâu & chú rể: ảnh zoom nhẹ về kích thước gốc khi cuộn tới (ảnh luôn có màu)
     $$(".role").forEach((r) => ScrollTrigger.create({ trigger: r, start: "top 55%", onEnter: () => r.classList.add("in-view") }));
 
     // Hiện dần các khối nội dung
