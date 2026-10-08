@@ -1761,3 +1761,6 @@ main > section:not(.hero) .head { margin-bottom: 36px; }
   position: absolute; left: 50%; bottom: calc(8px + env(safe-area-inset-bottom));
   margin: 0; transform: translateX(-50%);
 }
+
+/* Gen Z: bỏ hẳn khung vòm minh hoạ cạnh lời ngỏ */
+[data-theme="modern"] .logline-photo.is-illus { display: none !important; }

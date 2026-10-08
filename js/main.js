@@ -802,7 +802,7 @@
   const ILLUS = {
     // 1. khung vòm cạnh lời ngỏ
     1: `<div class="il il-y il1-y"><span class="il-hy">囍</span>${use("i-doves", "il-doves")}<p class="il-cap">Trăm năm<br>hạnh phúc</p>${use("i-palm", "il-palm il-palm-l")}${use("i-palm", "il-palm il-palm-r")}</div>
-        <div class="il il-z il1-z"><span class="il-blob b1"></span><span class="il-blob b2"></span>${use("i-bloom", "il-bloom bl1")}${use("i-bloom", "il-bloom bl2")}<span class="il-tag">est. 2026 ♡</span></div>`,
+        <div class="il il-z il1-z"><span class="il-blob b1"></span><span class="il-blob b2"></span>${use("i-bloom", "il-bloom bl1")}${use("i-bloom", "il-bloom bl2")}</div>`,
     // 2. nền phần ngày cưới
     2: `<div class="il il-y il2-y"><span class="il-hy">囍</span>${use("i-palm", "il-palm il-palm-l")}${use("i-palm", "il-palm il-palm-r")}</div>
         <div class="il il-z il2-z"><span class="il-blob b1"></span><span class="il-blob b2"></span><span class="il-blob b3"></span>${use("i-bloom", "il-bloom bl1")}${use("i-bloom", "il-bloom bl2")}</div>`,
@@ -934,7 +934,7 @@
     // 2. Lời ngỏ rõ dần từng chữ
     gsap.fromTo("#logline .w", { opacity: 0.28 }, {
       opacity: 1, stagger: 0.05, ease: "none",
-      scrollTrigger: { trigger: "#logline", start: "top 78%", end: "bottom 45%", scrub: true },
+      scrollTrigger: { trigger: "#logline", start: "top 92%", end: "bottom 75%", scrub: 0.4 }, // sáng sớm hơn, xong khi đoạn văn còn ở nửa dưới màn hình
     });
 
     // Ảnh nền trôi chậm khi cuộn
@@ -1122,8 +1122,8 @@
       const io = new IntersectionObserver(([en]) => {
         if (!en.isIntersecting) return;
         io.disconnect();
-        setTimeout(() => logline.classList.add("is-sent"), isGenZ() ? 1300 : 0);
-      }, { threshold: 0.35 });
+        setTimeout(() => logline.classList.add("is-sent"), isGenZ() ? 700 : 0);
+      }, { threshold: 0.15 });
       io.observe(logline);
     }
 
