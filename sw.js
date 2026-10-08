@@ -5,7 +5,7 @@
  *  - Font Google, GSAP (link cố định phiên bản): dùng bản đã lưu, không có mới tải.
  *  - Nhạc: không lưu (file lớn, trình duyệt tải từng đoạn).
  * ========================================================================= */
-const CACHE = "thiep-v4";
+const CACHE = "thiep-v5";
 const CORE = [
   "./", "index.html", "css/style.css", "js/config.js", "js/main.js",
   "manifest.webmanifest", "assets/icon-192.png", "assets/icon-512.png", "photos/cover.webp",
@@ -71,7 +71,9 @@ self.addEventListener("message", (e) => {
 
 async function networkFirst(req) {
   const cache = await caches.open(CACHE);
-  const net = fetch(req).then((res) => {
+  // cache: "no-cache" → always revalidate with the server (ETag/304), so a new deploy shows up immediately
+  // instead of waiting for GitHub Pages' 10-minute browser cache (max-age=600).
+  const net = fetch(req, { cache: "no-cache" }).then((res) => {
     if (res.ok) cache.put(req, res.clone());
     return res;
   });
