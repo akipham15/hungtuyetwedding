@@ -123,7 +123,8 @@
       cards.push(["i-shirt", "Trang phục", `<p>${esc(g.dressCode.text)}</p>${sw ? `<div class="swatches">${sw}</div>` : ""}`]);
     }
     if (g.parking) cards.push(["i-car", "Gửi xe", `<p>${esc(g.parking)}</p>`]);
-    const contacts = (g.contacts || []).filter((c) => c.phone);
+    const contacts = (g.contacts || []).filter((c) => c.phone)
+      .filter((c) => !SIDE || (SIDE === "trai" ? /chú rể/i : /cô dâu/i).test(c.role || "")); // đã chọn bên: chỉ người bên đó
     if (contacts.length) {
       cards.push(["i-phone", "Liên hệ", contacts.map((c) => `
         <div class="contact">
@@ -224,11 +225,13 @@
   function renderShows() {
     const list = C.events || [];
     if (!list.length) return ($("#lich-chieu").hidden = true);
+    // đã chọn một bên: tiêu đề theo bên đó thay vì "hai bên gia đình"
+    if (SIDE) $("#lich-chieu .h2").innerHTML = `Lịch trình <i>${SIDE === "trai" ? "nhà trai" : "nhà gái"}</i>`;
     const mine = SIDE;
     const sides = [
       { key: "trai", label: "Nhà trai", p: C.groom || {} },
       { key: "gai", label: "Nhà gái", p: C.bride || {} },
-    ];
+    ].filter((sd) => !mine || sd.key === mine); // đã chọn bên: chỉ hiện bên đó
     const eventsOf = (key) => list
       .filter((e) => !e.side || e.side === key)
       .map((e) => ({ e, dt: parseDT(e.date, e.time) || W }))
@@ -254,13 +257,12 @@
     const active = mine || "trai";
     $("#sides").dataset.active = active;
     $("#sides").innerHTML = `
-      <div class="side-tabs" role="tablist" aria-label="Chọn bên gia đình">
+      <div class="side-tabs" role="tablist" aria-label="Chọn bên gia đình"${mine ? " hidden" : ""}>
         ${sides.map((sd) => `<button type="button" role="tab" data-tab="${sd.key}" aria-selected="${sd.key === active}">${sd.label}${sd.key === mine ? " ✓" : ""}</button>`).join("")}
       </div>
       ${sides.map((sd) => `
         <article class="side side-${sd.key}${sd.key === mine ? " is-mine" : ""}" data-side="${sd.key}">
           <header class="side-head">
-            ${sd.key === mine ? `<span class="side-badge">${icon("i-check", "ic")} Bạn được mời bên này</span>` : ""}
             <p class="side-label">${sd.label}</p>
             <p class="side-parents">Ông <b>${esc(sd.p.father)}</b><br>Bà <b>${esc(sd.p.mother)}</b></p>
             ${sd.p.address ? (sd.p.map
@@ -282,7 +284,10 @@
   /* ------------------------------------------------------------------ gift */
   function renderGift() {
     const g = C.gift || {};
-    const list = g.accounts || [];
+    const all = g.accounts || [];
+    // đã chọn bên: chỉ tài khoản bên đó (nhận theo nhãn "chú rể" / "cô dâu"); không khớp thì hiện tất cả
+    const own = SIDE ? all.filter((a) => (SIDE === "trai" ? /chú rể/i : /cô dâu/i).test(a.label || "")) : [];
+    const list = own.length ? own : all;
     if (!g.show || !list.length) return ($("#mung-cuoi").hidden = true);
     $("#gifts").innerHTML = list.map((a) => `
       <article class="gift-item" data-reveal>
@@ -1608,7 +1613,49 @@
   }
 
   /* ------------------------------------------------------------------- init */
+  /** Mỗi lần bấm "Mở thiệp" đều hỏi khách bên nào (chọn nhầm thì lần sau chọn lại). Không lưu lựa chọn.
+   *  Chọn đúng bên đang xem: mở luôn. Chọn bên khác / cả hai: tải lại trang theo lựa chọn rồi tự mở thiệp. */
+  function setupSidePick() {
+    const ask = $("#side-ask");
+    if (!ask) return;
+    let pass = false; // lần bấm do chính hộp hỏi gọi lại -> cho mở thiệp
+    const cur = SIDE || "ca";
+    $$("[data-side-ans]", ask).forEach((b) => b.classList.toggle("is-current", b.dataset.sideAns === cur && !!SIDE));
+    ["#play-btn", "[data-open-invite]"].forEach((sel) => $(sel)?.addEventListener("click", (e) => {
+      if (pass) return;
+      e.stopImmediatePropagation();
+      ask.hidden = false;
+      requestAnimationFrame(() => ask.classList.add("is-in"));
+    }, true));
+    const close = () => { ask.classList.remove("is-in"); setTimeout(() => (ask.hidden = true), 250); };
+    ask.addEventListener("click", (e) => {
+      if (e.target === ask) return close(); // chạm ra ngoài: đóng, chưa mở thiệp
+      const b = e.target.closest("[data-side-ans]");
+      if (!b) return;
+      const v = b.dataset.sideAns;
+      if (v === cur) { // giữ nguyên bên đang xem -> mở thiệp ngay (nhạc phát được vì đang trong lúc bấm)
+        close(); pass = true; $("#play-btn").click(); pass = false;
+        return;
+      }
+      try { sessionStorage.setItem("thiep-autoopen", "1"); } catch {}
+      const url = new URL(location.href);
+      if (v === "ca") url.searchParams.delete("ben"); else url.searchParams.set("ben", v);
+      location.replace(url);
+    });
+    setupSidePick.open = () => { pass = true; $("#play-btn").click(); pass = false; };
+  }
+  /** Vừa chọn bên xong (trang tải lại): mở thiệp luôn; nhạc bật ở lần chạm/cuộn đầu tiên (trình duyệt chặn tự phát) */
+  function autoOpenAfterPick() {
+    let flag = "";
+    try { flag = sessionStorage.getItem("thiep-autoopen"); sessionStorage.removeItem("thiep-autoopen"); } catch {}
+    if (!flag) return;
+    setupSidePick.open();
+    const kick = () => { playMusic(); ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => removeEventListener(ev, kick)); };
+    ["pointerdown", "touchstart", "keydown", "wheel"].forEach((ev) => addEventListener(ev, kick, { passive: true }));
+  }
+
   async function init() {
+    setupSidePick();
     setupTheme();
     bindTexts();
     buildHeroTitle();
@@ -1625,6 +1672,7 @@
     setupScroll();
     setupLightbox();
     runLeader();
+    autoOpenAfterPick();
     setupFx();
     setupOffline();
     setupScratch();
