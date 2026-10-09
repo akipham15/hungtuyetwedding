@@ -34,7 +34,9 @@
   const params = new URLSearchParams(location.search);
   // Khách bên nào: ?ben=trai | ?ben=gai (không ghi = chưa rõ, hiển thị theo nhà trai)
   const BEN = (params.get("ben") || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  const SIDE = BEN.includes("trai") ? "trai" : BEN.includes("gai") ? "gai" : "";
+  // tên miền riêng cho từng bên (config.domains): mở từ tên miền đó thì cố định bên, không hỏi khách
+  const HOST_SIDE = (C.domains || {})[location.hostname.toLowerCase()] || "";
+  const SIDE = HOST_SIDE || (BEN.includes("trai") ? "trai" : BEN.includes("gai") ? "gai" : "");
   // Lễ & tiệc của bên đang xem (sự kiện không ghi side là chung cho cả hai bên)
   const MY_EVENTS = (C.events || []).filter((e) => !e.side || e.side === (SIDE || "trai"));
   const isCeremony = (e) => /hôn lễ|thành hôn|vu quy/i.test(e.title || "");
@@ -44,8 +46,12 @@
     const own = SIDE === "gai" && MY_EVENTS.find((e) => e.side === "gai" && isCeremony(e));
     return own ? parseDT(own.date, own.time) : parseDT(C.date);
   })();
-  const G = (get(C, "groom.name") || "").normalize("NFC");
-  const B = (get(C, "bride.name") || "").normalize("NFC");
+  // G, B: tên hiển thị theo thứ tự — thiệp nhà gái ghi tên cô dâu trước (Tuyết & Hưng)
+  const BRIDE_FIRST = SIDE === "gai";
+  const NAME_G = (get(C, "groom.name") || "").normalize("NFC");
+  const NAME_B = (get(C, "bride.name") || "").normalize("NFC");
+  const G = BRIDE_FIRST ? NAME_B : NAME_G;
+  const B = BRIDE_FIRST ? NAME_G : NAME_B;
   // Tên khách mời: ?ten=Anh%20Nam (hoặc ?to= / ?khach=). Không có thì xưng "bạn".
   const GUEST = (params.get("ten") || params.get("to") || params.get("khach") || "").trim().slice(0, 60);
 
@@ -73,14 +79,20 @@
 
   /* ------------------------------------------------------------------ text */
   function bindTexts() {
+    // thiệp nhà gái: các cặp tên "chú rể … cô dâu" đứng cạnh nhau thì đảo thành "cô dâu … chú rể"
+    if (BRIDE_FIRST) document.documentElement.classList.add("bride-first");
+    if (BRIDE_FIRST) $$('[data-bind="groom.name"]').forEach((g) => {
+      const b = $('[data-bind="bride.name"]', g.parentElement);
+      if (b) { g.dataset.bind = "bride.name"; b.dataset.bind = "groom.name"; }
+    });
     $$("[data-bind]").forEach((el) => {
       const v = get(C, el.dataset.bind);
       if (v) el.textContent = v;
       else if (!el.textContent.trim()) el.hidden = true;
     });
     $$("[data-mono]").forEach((el) => (el.textContent = `${G.charAt(0)} & ${B.charAt(0)}`));
-    $$('[data-initial="groom"]').forEach((el) => (el.textContent = G.charAt(0)));
-    $$('[data-initial="bride"]').forEach((el) => (el.textContent = B.charAt(0)));
+    $$('[data-initial="groom"]').forEach((el) => (el.textContent = NAME_G.charAt(0)));
+    $$('[data-initial="bride"]').forEach((el) => (el.textContent = NAME_B.charAt(0)));
     if (G && B) document.title = `${G} & ${B} — Thiệp cưới`;
 
     if (W) {
@@ -361,7 +373,7 @@
       return [`Tại tư gia ${label.toLowerCase()}`, `${rows}${addr ? `<small>Địa chỉ: ${esc(addr)}</small>` : ""}`, "cr-side"];
     }).filter(Boolean);
     const blocks = [
-      ["Trân trọng báo tin lễ thành hôn của con chúng tôi", `${esc(gr.fullName || G)}<br>&amp;<br>${esc(br.fullName || B)}`],
+      ["Trân trọng báo tin lễ thành hôn của con chúng tôi", (BRIDE_FIRST ? `${esc(br.fullName || NAME_B)}<br>&amp;<br>${esc(gr.fullName || NAME_G)}` : `${esc(gr.fullName || NAME_G)}<br>&amp;<br>${esc(br.fullName || NAME_B)}`)],
       // link có ben=trai/gai: chỉ lễ & tiệc của bên đó; không ghi bên nào: hiện rõ cả hai bên kèm địa chỉ
       ...(SIDE ? [
         party ? [`Vui lòng đến dự buổi tiệc chung vui cùng gia đình chúng tôi${party.place ? ` tại ${esc(party.place.toLowerCase())}` : ""}`, partyWhen()] : null,
@@ -1617,7 +1629,7 @@
    *  Chọn đúng bên đang xem: mở luôn. Chọn bên khác / cả hai: tải lại trang theo lựa chọn rồi tự mở thiệp. */
   function setupSidePick() {
     const ask = $("#side-ask");
-    if (!ask) return;
+    if (!ask || HOST_SIDE) return; // tên miền riêng của một bên: không hỏi
     let pass = false; // lần bấm do chính hộp hỏi gọi lại -> cho mở thiệp
     const cur = SIDE || "ca";
     $$("[data-side-ans]", ask).forEach((b) => b.classList.toggle("is-current", b.dataset.sideAns === cur && !!SIDE));

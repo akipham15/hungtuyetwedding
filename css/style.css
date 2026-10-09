@@ -1809,3 +1809,10 @@ main > section:not(.hero) .head { margin-bottom: 36px; }
 .ct-tile:only-child small { grid-area: role; }
 .ct-tile:only-child b { grid-area: name; font-size: 1.2rem; }
 .ct-tile:only-child .ct-actions { grid-area: act; margin: 0; }
+
+/* thiệp nhà gái: cô dâu đứng trước trong "Hai nửa yêu thương" */
+.bride-first .cast-grid [data-person="bride"] { order: -1; margin-top: 0 !important; }
+.bride-first .cast-grid [data-person="groom"] { margin-top: 36px !important; }
+
+/* thiệp nhà gái: lật ngang 2 ảnh chân dung để cô dâu (trái) và chú rể (phải) nhìn vào nhau */
+.bride-first .cast-grid .role-photo img { scale: -1 1; }

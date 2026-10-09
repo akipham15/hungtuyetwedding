@@ -20,6 +20,13 @@ window.WEDDING = {
     map: "https://www.google.com/maps/search/?api=1&query=20.92542266845703,105.83877563476562", // vị trí chấm tay trên Google Maps (địa chỉ chưa tìm được)
   },
 
+  // Tên miền riêng cho từng bên: mở từ tên miền nào thì thiệp cố định bên đó (không hỏi khách),
+  // thiệp nhà gái ghi tên cô dâu trước. Tên miền khác (vd hungtuyetwedding.date) vẫn hỏi khách như cũ.
+  domains: {
+    "hungtuyet.thiepcuoi.date": "trai",
+    "tuyethung.thiepcuoi.date": "gai",
+  },
+
   // Thời điểm hôn lễ mặc định (đếm ngược, ngày trên bìa). Định dạng: YYYY-MM-DDTHH:mm (giờ Việt Nam)
   // Khách nhà gái (link có &ben=gai) sẽ tự thấy giờ hôn lễ của nhà gái (sự kiện "Hôn Lễ" có side: "gai" bên dưới).
   date: "2026-11-16T15:00",             // Thứ Hai, 16/11/2026 — hôn lễ nhà trai

@@ -5,7 +5,7 @@
  *  - Font Google, GSAP (link cố định phiên bản): dùng bản đã lưu, không có mới tải.
  *  - Nhạc: không lưu (file lớn, trình duyệt tải từng đoạn).
  * ========================================================================= */
-const CACHE = "thiep-v5";
+const CACHE = "thiep-v6";
 const CORE = [
   "./", "index.html", "css/style.css", "js/config.js", "js/main.js",
   "manifest.webmanifest", "assets/icon-192.png", "assets/icon-512.png", "photos/cover.webp",

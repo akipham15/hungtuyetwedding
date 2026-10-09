@@ -118,3 +118,10 @@ assets/           ảnh QR, v.v. (tuỳ chọn)
 - Nhạc chỉ tải khi khách bấm nghe; ảnh album, chân dung tải dần khi cuộn tới.
 - Hiệu ứng hạt phim (Gen Y) đứng yên trên điện thoại cho cuộn mượt.
 - Phần còn nặng nhất là **ảnh** — nhớ thu nhỏ ảnh trước khi chép vào `photos/`.
+
+## Tên miền riêng cho từng bên (Cloudflare Pages)
+
+- `hungtuyet.thiepcuoi.date` → thiệp nhà trai (Hưng & Tuyết), `tuyethung.thiepcuoi.date` → thiệp nhà gái (Tuyết & Hưng, ảnh chân dung lật để hai người nhìn vào nhau). Hai tên miền này không hỏi khách bên nào, chỉ hiện lịch trình / liên hệ / tài khoản của bên đó.
+- Danh sách nằm ở `domains` trong `js/config.js`; ảnh & tiêu đề xem trước khi gửi link do `functions/_middleware.js` đổi theo tên miền (chỉ chạy trên Cloudflare Pages) — thêm tên miền thì sửa cả hai chỗ.
+- `hungtuyetwedding.date` (GitHub Pages) giữ như cũ: hỏi khách bên nào khi bấm "Mở thiệp".
+- Cloudflare Pages: kết nối repo, branch `main`, Framework None, Build command để trống, Output `/`, rồi thêm 2 tên miền ở Custom domains.
